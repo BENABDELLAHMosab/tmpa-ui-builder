@@ -53,3 +53,7 @@ Assurez-vous d'avoir Docker et Docker Compose installés sur votre machine.
 - **Frontend** : [http://localhost:5173](http://localhost:5173)
 - **Backend (Health Check)** : [http://localhost:5000/api/health](http://localhost:5000/api/health)
 - **MongoDB** : `mongodb://localhost:27017`
+- **Mongo Express** : [http://localhost:8081](http://localhost:8081)
+  - Identifiant : `admin`
+  - Mot de passe : `admin123`
+  - *Note : mongo-express est uniquement destiné à l'environnement de développement.*
