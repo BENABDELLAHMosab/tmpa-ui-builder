@@ -29,3 +29,27 @@ Dans l'écosystème Tanger Med PCS, de nombreux services digitaux sont développ
 
 ## Statut du Projet
 **Sprint 0 / Initialisation** : Création de la structure documentaire et définition de l'architecture.
+
+## Démarrage Rapide (Docker)
+
+Assurez-vous d'avoir Docker et Docker Compose installés sur votre machine.
+
+### Commandes utiles
+
+- **Lancer toute la stack (détaché)** :
+  ```bash
+  docker compose up --build -d
+  ```
+- **Afficher les logs en direct** :
+  ```bash
+  docker compose logs -f
+  ```
+- **Arrêter les containers** :
+  ```bash
+  docker compose down
+  ```
+
+### URLs utiles
+- **Frontend** : [http://localhost:5173](http://localhost:5173)
+- **Backend (Health Check)** : [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- **MongoDB** : `mongodb://localhost:27017`
