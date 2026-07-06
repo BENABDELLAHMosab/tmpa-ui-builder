@@ -3,6 +3,6 @@ import { getHealthStatus } from '../controllers/health.controller';
 
 const router = express.Router();
 
-router.get('/', getHealthStatus);
+router.get('/test', getHealthStatus);
 
 export default router;
