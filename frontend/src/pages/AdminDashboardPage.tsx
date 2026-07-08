@@ -6,7 +6,7 @@ const AdminDashboardPage = () => {
 
   const handleLogout = () => {
     clearAuthStorage();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   return (
