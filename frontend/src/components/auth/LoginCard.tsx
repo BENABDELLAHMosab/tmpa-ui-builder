@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/auth.service';
 
 const LoginCard = () => {
@@ -7,12 +8,11 @@ const LoginCard = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
 
     try {
@@ -22,9 +22,9 @@ const LoginCard = () => {
       localStorage.setItem("authUser", JSON.stringify(response.user));
       
       if (response.user.role === "admin") {
-        setSuccess("Connected as Admin");
+        navigate("/admin/dashboard");
       } else {
-        setSuccess("Connected as User-Developer");
+        navigate("/developer/dashboard");
       }
     } catch (err: any) {
       setError(err.message || "Authentication failed");
@@ -74,12 +74,6 @@ const LoginCard = () => {
       {error && (
         <div className="login-message" style={{ backgroundColor: "#fee2e2", color: "#b91c1c" }}>
           {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="login-message" style={{ backgroundColor: "#dcfce3", color: "#166534" }}>
-          {success}
         </div>
       )}
 

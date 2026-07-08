@@ -1,9 +1,12 @@
-import LoginPage from './pages/LoginPage';
+import { BrowserRouter } from 'react-router-dom';
+import AppRoutes from './routes/AppRoutes';
 import './index.css';
 
 function App() {
   return (
-    <LoginPage />
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
 
