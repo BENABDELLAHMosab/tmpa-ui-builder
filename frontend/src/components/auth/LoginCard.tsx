@@ -1,13 +1,36 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { authService } from '../../services/auth.service';
 
-const LoginCard: React.FC = () => {
+const LoginCard = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setMessage("Authentication will be implemented in the next sprint.");
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const response = await authService.login({ email, password });
+      
+      localStorage.setItem("accessToken", response.accessToken);
+      localStorage.setItem("authUser", JSON.stringify(response.user));
+      
+      if (response.user.role === "admin") {
+        setSuccess("Connected as Admin");
+      } else {
+        setSuccess("Connected as User-Developer");
+      }
+    } catch (err: any) {
+      setError(err.message || "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,6 +49,7 @@ const LoginCard: React.FC = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required 
+            disabled={loading}
           />
         </div>
         <div className="form-group">
@@ -38,15 +62,24 @@ const LoginCard: React.FC = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required 
+            disabled={loading}
           />
         </div>
         
-        <button type="submit" className="btn-primary">Sign in</button>
+        <button type="submit" className="btn-primary" disabled={loading}>
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
       </form>
 
-      {message && (
-        <div className="login-message">
-          {message}
+      {error && (
+        <div className="login-message" style={{ backgroundColor: "#fee2e2", color: "#b91c1c" }}>
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="login-message" style={{ backgroundColor: "#dcfce3", color: "#166534" }}>
+          {success}
         </div>
       )}
 
@@ -58,3 +91,4 @@ const LoginCard: React.FC = () => {
 };
 
 export default LoginCard;
+

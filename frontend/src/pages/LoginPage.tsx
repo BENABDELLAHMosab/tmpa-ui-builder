@@ -1,4 +1,3 @@
-import React from 'react';
 import AuthLayout from '../components/layout/AuthLayout';
 import LoginCard from '../components/auth/LoginCard';
 
