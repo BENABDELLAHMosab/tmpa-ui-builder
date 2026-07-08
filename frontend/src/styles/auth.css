@@ -1,0 +1,193 @@
+/* src/styles/auth.css */
+.auth-container {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.auth-left {
+  flex: 1;
+  background-image: url('/assets/tmpa-port.jpg');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  padding: 4rem;
+}
+
+.auth-left-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 37, 64, 0.55); /* Navy blue overlay reduced for visibility */
+  z-index: 1;
+}
+
+.auth-left-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.auth-logo {
+  width: 150px;
+  margin-bottom: 4rem;
+}
+
+.auth-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+}
+
+.auth-subtitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 2rem 0;
+  color: #000000; /* Cyan accent */
+}
+
+.auth-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 400px;
+  margin-bottom: 3rem;
+}
+
+.auth-features {
+  color: #ffffff;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.auth-features li {
+  font-family: 'Arial' ;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.auth-features li::before {
+  content: "✓";
+  color: #64ffda;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.auth-right {
+  flex: 1;
+  background-color: #f8fafc; /* Light gray */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.login-card {
+  background: white;
+  padding: 3rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+}
+
+.login-title {
+  font-size: 2rem;
+  color: #0f172a; /* Navy text */
+  margin: 0 0 0.5rem 0;
+}
+
+.login-subtitle {
+  color: #64748b;
+  margin: 0 0 2rem 0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #0284c7; /* Bleu TMPA */
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border: 1px solid #bae6fd;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  color: #0f172a;
+}
+
+.form-input::placeholder {
+  color: #94a3b8;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+  background-color: white;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+}
+
+.btn-primary:hover {
+  background-color: #1e293b;
+}
+
+.login-help {
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.login-message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .auth-container {
+    flex-direction: column;
+  }
+  .auth-left {
+    padding: 2rem;
+    min-height: 400px;
+  }
+  .auth-title {
+    font-size: 2rem;
+  }
+}
