@@ -1,0 +1,54 @@
+import type { UiPage, CreatePageRequest } from '../types/page';
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+const getHeaders = () => {
+  const token = localStorage.getItem("accessToken");
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`
+  };
+};
+
+export const pageService = {
+  getPages: async (): Promise<UiPage[]> => {
+    const response = await fetch(`${API_URL}/pages`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch pages");
+    }
+
+    return response.json();
+  },
+
+  createPage: async (payload: CreatePageRequest): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to create page");
+    }
+
+    return response.json();
+  },
+
+  deletePage: async (pageId: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to delete page");
+    }
+  }
+};

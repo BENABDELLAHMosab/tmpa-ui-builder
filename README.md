@@ -57,3 +57,40 @@ Assurez-vous d'avoir Docker et Docker Compose installés sur votre machine.
   - Identifiant : `admin`
   - Mot de passe : `admin123`
   - *Note : mongo-express est uniquement destiné à l'environnement de développement.*
+
+## Run locally with npm
+
+Pour lancer le projet localement sans utiliser Docker pour les serveurs Node/Vite (utile pour le développement natif), suivez ces étapes :
+
+1. **Installer les dépendances** à la racine, côté backend et côté frontend :
+   ```bash
+   npm install
+   npm run install:all
+   ```
+
+2. **Configurer les variables d'environnement** :
+   Copiez les fichiers d'exemple pour créer vos propres `.env`.
+   ```bash
+   cp backend/.env.example backend/.env
+   cp frontend/.env.example frontend/.env
+   ```
+
+3. **Lancer MongoDB** :
+   Si MongoDB n'est pas installé sur votre machine, vous pouvez utiliser Docker pour lancer uniquement la base de données :
+   ```bash
+   docker compose up -d mongo
+   ```
+
+4. **Initialiser la base de données (optionnel)** :
+   Pour ajouter des utilisateurs de base (admin / dev) :
+   ```bash
+   npm run seed:users
+   ```
+
+5. **Démarrer le backend et le frontend simultanément** :
+   ```bash
+   npm start
+   ```
+
+- Le frontend sera accessible sur [http://localhost:5173](http://localhost:5173).
+- Le backend sera accessible sur [http://localhost:5000/api/health](http://localhost:5000/api/health).
