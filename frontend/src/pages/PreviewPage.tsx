@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { pageService } from '../services/page.service';
+import { getAuthUser, getDashboardPathByRole } from '../utils/authStorage';
 import type { UiPage, BuilderComponent } from '../types/page';
 import PreviewRenderer from '../components/preview/PreviewRenderer';
 import '../styles/preview.css';
@@ -9,6 +10,8 @@ import '../styles/builder.css';
 const PreviewPage = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from as string | undefined;
   
   const [page, setPage] = useState<UiPage | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -40,6 +43,22 @@ const PreviewPage = () => {
     fetchPage();
   }, [pageId]);
 
+  const handleBackToBuilder = () => {
+    if (from) {
+      navigate(from);
+    } else if (pageId) {
+      navigate(`/builder/${pageId}`);
+    } else {
+      navigate('/developer/dashboard');
+    }
+  };
+
+  const handleBackToDashboard = () => {
+    const user = getAuthUser();
+    const dashboardPath = getDashboardPathByRole(user?.role);
+    navigate(dashboardPath);
+  };
+
   if (loading) {
     return <div className="preview-loading">Loading preview...</div>;
   }
@@ -49,7 +68,7 @@ const PreviewPage = () => {
       <div className="preview-error">
         <h2>Error</h2>
         <p>{error || "Page not found"}</p>
-        <button onClick={() => navigate('/developer/dashboard')} className="btn-primary">
+        <button onClick={handleBackToDashboard} className="btn-primary">
           Back to Dashboard
         </button>
       </div>
@@ -72,10 +91,10 @@ const PreviewPage = () => {
           </div>
         </div>
         <div className="builder-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn-secondary" onClick={() => navigate(`/builder/${pageId}`)}>
+          <button className="btn-secondary" onClick={handleBackToBuilder}>
             Back to builder
           </button>
-          <button className="btn-primary" onClick={() => navigate('/developer/dashboard')}>
+          <button className="btn-primary" onClick={handleBackToDashboard}>
             Back to dashboard
           </button>
         </div>

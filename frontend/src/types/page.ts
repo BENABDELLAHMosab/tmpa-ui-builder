@@ -23,6 +23,9 @@ export interface UiPage {
   version: number;
   createdAt: string;
   updatedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
 }
 
 export interface CreatePageRequest {

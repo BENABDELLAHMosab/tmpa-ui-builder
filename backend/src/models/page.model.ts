@@ -7,6 +7,9 @@ export interface IPage extends Omit<Document, 'schema'> {
   status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'published';
   schema: Record<string, any>;
   version: number;
+  reviewedBy?: mongoose.Types.ObjectId;
+  reviewedAt?: Date;
+  rejectionReason?: string;
 }
 
 const pageSchema: Schema = new Schema(
@@ -19,6 +22,9 @@ const pageSchema: Schema = new Schema(
       enum: ['draft', 'submitted', 'approved', 'rejected', 'published'],
       default: 'draft'
     },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    reviewedAt: { type: Date },
+    rejectionReason: { type: String, default: "" },
     schema: { type: Schema.Types.Mixed, default: { components: [] } },
     version: { type: Number, default: 1 }
   },

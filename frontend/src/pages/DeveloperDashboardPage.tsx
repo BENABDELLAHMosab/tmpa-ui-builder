@@ -59,21 +59,27 @@ const DeveloperDashboardPage = () => {
       </header>
 
       <main className="dashboard-main">
-        {error && (
-          <div className="login-message" style={{ backgroundColor: "#fee2e2", color: "#b91c1c", marginBottom: '1rem', padding: '1rem', borderRadius: '4px' }}>
-            {error}
-          </div>
-        )}
-        
-        <CreatePageForm onPageCreated={handlePageCreated} />
-        
-        <div>
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem', color: '#0f172a' }}>Your Pages</h2>
-          {loading ? (
-            <p style={{ color: '#64748b' }}>Loading pages...</p>
-          ) : (
-            <PageList pages={pages} onDelete={handleDeletePage} />
+        <div className="dashboard-content-wrapper">
+          {error && (
+            <div style={{ backgroundColor: "var(--color-danger)", color: "white", marginBottom: '1rem', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+              {error}
+            </div>
           )}
+          
+          <div className="dashboard-grid">
+            <div>
+              <CreatePageForm onPageCreated={handlePageCreated} />
+            </div>
+            
+            <div>
+              <h2 style={{ marginBottom: '1.25rem', fontSize: '1.25rem', color: 'var(--color-text)' }}>Your Pages</h2>
+              {loading ? (
+                <p style={{ color: 'var(--color-muted)' }}>Loading pages...</p>
+              ) : (
+                <PageList pages={pages} onDelete={handleDeletePage} />
+              )}
+            </div>
+          </div>
         </div>
       </main>
     </div>
@@ -81,4 +87,3 @@ const DeveloperDashboardPage = () => {
 };
 
 export default DeveloperDashboardPage;
-

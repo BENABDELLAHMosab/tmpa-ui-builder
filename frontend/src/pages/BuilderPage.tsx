@@ -129,7 +129,11 @@ const BuilderPage = () => {
   };
 
   const handlePreview = () => {
-    navigate(`/preview/${pageId}`);
+    navigate(`/preview/${pageId}`, {
+      state: {
+        from: `/builder/${pageId}`
+      }
+    });
   };
 
   if (loading) {

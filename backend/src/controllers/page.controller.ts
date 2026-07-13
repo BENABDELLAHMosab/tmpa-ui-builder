@@ -132,3 +132,59 @@ export const submitPage = async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
+
+export const approvePage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const page = await Page.findById(req.params.id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    if (page.status !== "submitted") {
+      res.status(400).json({ error: "Only submitted pages can be approved" });
+      return;
+    }
+
+    page.status = "approved";
+    page.reviewedBy = req.user?.id as any;
+    page.reviewedAt = new Date();
+    page.rejectionReason = "";
+
+    const updatedPage = await page.save();
+    res.json(updatedPage);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
+
+export const rejectPage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { rejectionReason } = req.body;
+    if (!rejectionReason || typeof rejectionReason !== 'string' || rejectionReason.trim() === '') {
+      res.status(400).json({ error: "Rejection reason is required" });
+      return;
+    }
+
+    const page = await Page.findById(req.params.id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    if (page.status !== "submitted") {
+      res.status(400).json({ error: "Only submitted pages can be rejected" });
+      return;
+    }
+
+    page.status = "rejected";
+    page.reviewedBy = req.user?.id as any;
+    page.reviewedAt = new Date();
+    page.rejectionReason = rejectionReason;
+
+    const updatedPage = await page.save();
+    res.json(updatedPage);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};

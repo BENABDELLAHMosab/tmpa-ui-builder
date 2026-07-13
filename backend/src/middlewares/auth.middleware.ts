@@ -24,3 +24,13 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
     res.status(403).json({ error: 'Forbidden: Invalid token' });
   }
 };
+
+export const requireRole = (role: string) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || req.user.role !== role) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+    next();
+  };
+};

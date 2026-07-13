@@ -54,6 +54,35 @@ export const pageService = {
     return response.json();
   },
 
+  approvePage: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/approve`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to approve page");
+    }
+
+    return response.json();
+  },
+
+  rejectPage: async (pageId: string, rejectionReason: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reject`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ rejectionReason }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to reject page");
+    }
+
+    return response.json();
+  },
+
   getPages: async (): Promise<UiPage[]> => {
     const response = await fetch(`${API_URL}/pages`, {
       method: "GET",

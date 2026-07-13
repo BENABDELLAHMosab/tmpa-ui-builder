@@ -2,12 +2,12 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #f1f5f9;
+  background-color: var(--color-bg);
 }
 
 .preview-badge {
   font-size: 0.75rem;
-  background-color: #f59e0b;
+  background-color: var(--color-warning);
   color: white;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
@@ -20,17 +20,17 @@
   overflow-y: auto;
   display: flex;
   justify-content: center;
-  padding: 2rem;
+  padding: 2.5rem;
 }
 
 .preview-container {
   width: 100%;
-  max-width: 900px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding: 2rem;
-  min-height: 500px;
+  max-width: 1024px;
+  background-color: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 2.5rem;
+  min-height: 600px;
 }
 
 .preview-empty {
@@ -39,7 +39,7 @@
   align-items: center;
   height: 100%;
   min-height: 400px;
-  color: #94a3b8;
+  color: var(--color-muted);
   font-size: 1.1rem;
 }
 
@@ -56,31 +56,31 @@
 .preview-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  background-color: #f8fafc;
-  color: #64748b;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg);
+  color: var(--color-muted);
   cursor: not-allowed;
 }
 
 .preview-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
-  background-color: #ffffff;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  background-color: var(--color-card);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .preview-card h4 {
   margin: 0 0 0.75rem 0;
   font-size: 1.25rem;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .preview-card p {
   margin: 0;
-  color: #475569;
-  line-height: 1.5;
+  color: var(--color-muted);
+  line-height: 1.6;
 }
 
 .preview-table {
@@ -89,15 +89,15 @@
 }
 
 .preview-table th, .preview-table td {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   padding: 1rem;
   text-align: left;
 }
 
 .preview-table th {
-  background-color: #f8fafc;
+  background-color: var(--color-bg);
   font-weight: 600;
-  color: #334155;
+  color: var(--color-text);
 }
 
 .preview-loading, .preview-error {
@@ -106,7 +106,7 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  gap: 1rem;
-  background-color: #f8fafc;
-  color: #0f172a;
+  gap: 1.25rem;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
