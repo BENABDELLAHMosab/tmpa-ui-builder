@@ -11,6 +11,20 @@ const getHeaders = () => {
 };
 
 export const pageService = {
+  getPageById: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch page");
+    }
+
+    return response.json();
+  },
+
   getPages: async (): Promise<UiPage[]> => {
     const response = await fetch(`${API_URL}/pages`, {
       method: "GET",

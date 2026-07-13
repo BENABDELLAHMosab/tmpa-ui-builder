@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { UiPage } from '../../types/page';
 import '../../styles/auth.css'; // Reuse btn styles
 
@@ -7,14 +8,12 @@ interface PageListProps {
 }
 
 const PageList = ({ pages, onDelete }: PageListProps) => {
+  const navigate = useNavigate();
+
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this page?")) {
       onDelete(id);
     }
-  };
-
-  const handleOpenBuilder = () => {
-    alert("Builder will be implemented in the next sprint.");
   };
 
   if (pages.length === 0) {
@@ -46,7 +45,7 @@ const PageList = ({ pages, onDelete }: PageListProps) => {
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button 
-                onClick={handleOpenBuilder}
+                onClick={() => navigate(`/builder/${page._id}`)}
                 className="btn-primary"
                 style={{ padding: '0.5rem 1rem', width: 'auto' }}
               >
