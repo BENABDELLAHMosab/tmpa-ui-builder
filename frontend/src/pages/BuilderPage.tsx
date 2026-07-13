@@ -20,6 +20,7 @@ const BuilderPage = () => {
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   
   const [saving, setSaving] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
 
   useEffect(() => {
@@ -108,6 +109,29 @@ const BuilderPage = () => {
     }
   };
 
+  const handleSubmitForValidation = async () => {
+    if (!pageId || !page) return;
+
+    try {
+      setSubmitting(true);
+      setError(null);
+      setSuccessMessage('');
+      
+      const updatedPage = await pageService.submitPage(pageId);
+      setPage(updatedPage);
+      setSuccessMessage("Page submitted successfully");
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to submit page");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePreview = () => {
+    navigate(`/preview/${pageId}`);
+  };
+
   if (loading) {
     return <div className="builder-loading">Loading builder...</div>;
   }
@@ -133,6 +157,9 @@ const BuilderPage = () => {
           page={page} 
           onBack={() => navigate('/developer/dashboard')} 
           onSave={handleSave}
+          onPreview={handlePreview}
+          onSubmitForValidation={handleSubmitForValidation}
+          submitting={submitting}
           saving={saving}
         />
       )}

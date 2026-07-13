@@ -40,6 +40,20 @@ export const pageService = {
     return response.json();
   },
 
+  submitPage: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/submit`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to submit page");
+    }
+
+    return response.json();
+  },
+
   getPages: async (): Promise<UiPage[]> => {
     const response = await fetch(`${API_URL}/pages`, {
       method: "GET",

@@ -3,6 +3,7 @@ import LoginPage from '../pages/LoginPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
 import DeveloperDashboardPage from '../pages/DeveloperDashboardPage';
 import BuilderPage from '../pages/BuilderPage';
+import PreviewPage from '../pages/PreviewPage';
 import ProtectedRoute from './ProtectedRoute';
 
 const AppRoutes = () => {
@@ -31,6 +32,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={["user-developer","admin"]}>
             <BuilderPage />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/preview/:pageId" 
+        element={
+          <ProtectedRoute allowedRoles={["user-developer","admin"]}>
+            <PreviewPage />
           </ProtectedRoute>
         } 
       />

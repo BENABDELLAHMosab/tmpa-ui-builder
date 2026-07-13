@@ -101,3 +101,34 @@ export const deletePage = async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
+
+export const submitPage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const page = await Page.findById(req.params.id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    if (req.user?.role === "user-developer" && page.ownerId.toString() !== req.user.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    if (page.status !== "draft") {
+      res.status(400).json({ error: "Only draft pages can be submitted" });
+      return;
+    }
+
+    if (!page.schema || !page.schema.components || !Array.isArray(page.schema.components) || page.schema.components.length === 0) {
+      res.status(400).json({ error: "Cannot submit an empty page" });
+      return;
+    }
+
+    page.status = "submitted";
+    const updatedPage = await page.save();
+    res.json(updatedPage);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
