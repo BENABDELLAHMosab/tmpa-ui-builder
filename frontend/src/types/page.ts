@@ -1,7 +1,15 @@
 export type PageStatus = "draft" | "submitted" | "approved" | "rejected" | "published";
 
+export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table";
+
+export interface BuilderComponent {
+  id: string;
+  type: BuilderComponentType;
+  props: Record<string, unknown>;
+}
+
 export interface PageSchema {
-  components: unknown[];
+  components: BuilderComponent[];
   [key: string]: unknown;
 }
 

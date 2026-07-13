@@ -1,12 +1,13 @@
+import type { BuilderComponentType } from '../../types/page';
 import '../../styles/builder.css';
 
-const components = ['Text', 'Button', 'Input', 'Card', 'Table'];
+const components: BuilderComponentType[] = ['Text', 'Button', 'Input', 'Card', 'Table'];
 
-const ComponentSidebar = () => {
-  const handleComponentClick = () => {
-    alert("Drag and drop will be implemented in the next sprint.");
-  };
+interface ComponentSidebarProps {
+  onAddComponent: (type: BuilderComponentType) => void;
+}
 
+const ComponentSidebar = ({ onAddComponent }: ComponentSidebarProps) => {
   return (
     <div className="builder-sidebar">
       <h3>Components</h3>
@@ -15,7 +16,7 @@ const ComponentSidebar = () => {
           <button 
             key={comp} 
             className="component-item"
-            onClick={handleComponentClick}
+            onClick={() => onAddComponent(comp)}
           >
             {comp}
           </button>

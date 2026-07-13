@@ -4,9 +4,11 @@ import '../../styles/builder.css';
 interface BuilderHeaderProps {
   page: UiPage;
   onBack: () => void;
+  onSave: () => void;
+  saving: boolean;
 }
 
-const BuilderHeader = ({ page, onBack }: BuilderHeaderProps) => {
+const BuilderHeader = ({ page, onBack, onSave, saving }: BuilderHeaderProps) => {
   return (
     <div className="builder-header">
       <div className="builder-header-info">
@@ -15,9 +17,14 @@ const BuilderHeader = ({ page, onBack }: BuilderHeaderProps) => {
         <span className="builder-header-version">v{page.version}</span>
         {page.description && <p className="builder-header-desc">{page.description}</p>}
       </div>
-      <button className="btn-primary" onClick={onBack}>
-        Back to dashboard
-      </button>
+      <div className="builder-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+        <button className="btn-secondary" onClick={onSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save page'}
+        </button>
+        <button className="btn-primary" onClick={onBack}>
+          Back to dashboard
+        </button>
+      </div>
     </div>
   );
 };
