@@ -26,6 +26,8 @@ export interface UiPage {
   reviewedBy?: string;
   reviewedAt?: string;
   rejectionReason?: string;
+  publishedBy?: string | { _id: string; fullName: string; email?: string };
+  publishedAt?: string;
 }
 
 export interface CreatePageRequest {

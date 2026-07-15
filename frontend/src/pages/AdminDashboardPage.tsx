@@ -5,7 +5,11 @@ import type { UiPage } from '../types/page';
 import PortalLayout from '../components/layout/PortalLayout';
 import StatusBadge from '../components/ui/StatusBadge';
 
-const AdminDashboardPage = () => {
+interface AdminDashboardPageProps {
+  view?: 'pending' | 'publication';
+}
+
+const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
   const navigate = useNavigate();
   const [pages, setPages] = useState<UiPage[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -15,14 +19,18 @@ const AdminDashboardPage = () => {
 
   useEffect(() => {
     fetchPages();
-  }, []);
+  }, [view]);
 
   const fetchPages = async () => {
     try {
       setLoading(true);
       const data = await pageService.getPages();
-      const submittedPages = data.filter(p => p.status === 'submitted');
-      setPages(submittedPages);
+      const visiblePages = data.filter(p => {
+        if (view === 'pending') return p.status === 'submitted';
+        if (view === 'publication') return p.status === 'approved' || p.status === 'published';
+        return false;
+      });
+      setPages(visiblePages);
     } catch (err: any) {
       setError(err.message || 'Failed to load pages');
     } finally {
@@ -35,8 +43,8 @@ const AdminDashboardPage = () => {
     
     try {
       setActionLoadingId(pageId);
-      await pageService.approvePage(pageId);
-      setPages(pages.filter(p => p._id !== pageId));
+      const updatedPage = await pageService.approvePage(pageId);
+      setPages(previousPages => previousPages.filter(p => p._id !== updatedPage._id));
       setSuccessMessage("Page approved successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
@@ -63,6 +71,22 @@ const AdminDashboardPage = () => {
     }
   };
 
+  const handlePublish = async (pageId: string) => {
+    if (!window.confirm("Are you sure you want to publish this page?")) return;
+    
+    try {
+      setActionLoadingId(pageId);
+      const updatedPage = await pageService.publishPage(pageId);
+      setPages(pages.map(p => p._id === pageId ? updatedPage : p));
+      setSuccessMessage("Page published successfully");
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      alert(err.message || "Failed to publish page");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <PortalLayout title="Admin Portal">
@@ -72,12 +96,14 @@ const AdminDashboardPage = () => {
   }
 
   return (
-    <PortalLayout title="Admin Portal">
+    <PortalLayout title={view === 'pending' ? 'Pending Requests' : 'Publication'}>
       {error && <div style={{ color: 'white', backgroundColor: 'var(--color-danger)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>{error}</div>}
       {successMessage && <div style={{ color: 'white', backgroundColor: 'var(--color-success)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>{successMessage}</div>}
       
-      <div className="card" style={{ marginBottom: '2rem', padding: '2rem' }}>
-        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Pending Validation Requests</h2>
+      <div className="card admin-dashboard" style={{ marginBottom: '2rem', padding: '2rem' }}>
+        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>
+          {view === 'pending' ? 'Pending Requests' : 'Publication'}
+        </h2>
         {pages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--color-muted)' }}>
             <p style={{ fontSize: '1.1rem' }}>No pending validation requests.</p>
@@ -117,21 +143,35 @@ const AdminDashboardPage = () => {
                         >
                           Preview
                         </button>
-                        <button 
-                          onClick={() => handleApprove(page._id)}
-                          className="btn btn-success"
-                          disabled={actionLoadingId === page._id}
-                        >
-                          Approve
-                        </button>
-                        <button 
-                          onClick={() => handleReject(page._id)}
-                          className="btn btn-danger"
-                          style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5' }}
-                          disabled={actionLoadingId === page._id}
-                        >
-                          Reject
-                        </button>
+                        {page.status === 'submitted' && (
+                          <>
+                            <button 
+                              onClick={() => handleApprove(page._id)}
+                              className="btn btn-success"
+                              disabled={actionLoadingId === page._id}
+                            >
+                              Approve
+                            </button>
+                            <button 
+                              onClick={() => handleReject(page._id)}
+                              className="btn btn-danger"
+                              style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5' }}
+                              disabled={actionLoadingId === page._id}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {page.status === 'approved' && (
+                          <button 
+                            onClick={() => handlePublish(page._id)}
+                            className="btn"
+                            style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                            disabled={actionLoadingId === page._id}
+                          >
+                            {actionLoadingId === page._id ? 'Publishing...' : 'Publish'}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -83,6 +83,20 @@ export const pageService = {
     return response.json();
   },
 
+  publishPage: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/publish`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to publish page");
+    }
+
+    return response.json();
+  },
+
   getPages: async (): Promise<UiPage[]> => {
     const response = await fetch(`${API_URL}/pages`, {
       method: "GET",

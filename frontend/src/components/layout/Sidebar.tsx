@@ -11,12 +11,29 @@ const Sidebar = () => {
         <img src="/assets/tmpa-logo.png" alt="TMPA Logo" />
       </div>
       <nav className="portal-sidebar-nav">
-        <NavLink 
-          to={homePath} 
-          className={({ isActive }) => `portal-nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span>🏠 Home</span>
-        </NavLink>
+        {user?.role === 'admin' ? (
+          <>
+            <NavLink 
+              to="/admin/pending-requests" 
+              className={({ isActive }) => `portal-nav-item ${isActive ? 'active' : ''}`}
+            >
+              <span>📋 Pending Requests</span>
+            </NavLink>
+            <NavLink 
+              to="/admin/publication" 
+              className={({ isActive }) => `portal-nav-item ${isActive ? 'active' : ''}`}
+            >
+              <span>📢 Publication</span>
+            </NavLink>
+          </>
+        ) : (
+          <NavLink 
+            to={homePath} 
+            className={({ isActive }) => `portal-nav-item ${isActive ? 'active' : ''}`}
+          >
+            <span>🏠 Home</span>
+          </NavLink>
+        )}
       </nav>
     </aside>
   );

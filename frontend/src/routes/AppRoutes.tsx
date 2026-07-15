@@ -11,11 +11,20 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/admin/dashboard" element={<Navigate to="/admin/pending-requests" replace />} />
       <Route 
-        path="/admin/dashboard" 
+        path="/admin/pending-requests" 
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <AdminDashboardPage />
+            <AdminDashboardPage view="pending" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/publication" 
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminDashboardPage view="publication" />
           </ProtectedRoute>
         } 
       />

@@ -190,3 +190,27 @@ export const rejectPage = async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
+
+export const publishPage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const page = await Page.findById(req.params.id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    if (page.status !== "approved") {
+      res.status(409).json({ error: "Only approved pages can be published" });
+      return;
+    }
+
+    page.status = "published";
+    page.publishedBy = req.user?.id as any;
+    page.publishedAt = new Date();
+
+    const updatedPage = await page.save();
+    res.json(updatedPage);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
