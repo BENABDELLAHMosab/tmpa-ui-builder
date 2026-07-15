@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { clearAuthStorage } from '../utils/authStorage';
 import { pageService } from '../services/page.service';
 import type { UiPage } from '../types/page';
+import PortalLayout from '../components/layout/PortalLayout';
 import CreatePageForm from '../components/pages/CreatePageForm';
 import PageList from '../components/pages/PageList';
-import '../styles/dashboard.css';
 
 const DeveloperDashboardPage = () => {
-  const navigate = useNavigate();
   const [pages, setPages] = useState<UiPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,11 +25,6 @@ const DeveloperDashboardPage = () => {
     }
   };
 
-  const handleLogout = () => {
-    clearAuthStorage();
-    navigate('/login', { replace: true });
-  };
-
   const handlePageCreated = (newPage: UiPage) => {
     setPages((prev) => [newPage, ...prev]);
   };
@@ -47,42 +39,28 @@ const DeveloperDashboardPage = () => {
   };
 
   return (
-    <div className="dashboard-layout">
-      <header className="dashboard-header">
-        <div className="dashboard-title">
-          <h1>Developer Dashboard</h1>
-          <p>Create, preview and submit your UI pages.</p>
+    <PortalLayout title="Developer Dashboard">
+      {error && (
+        <div style={{ backgroundColor: "var(--color-danger)", color: "white", marginBottom: '1.5rem', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+          {error}
         </div>
-        <button onClick={handleLogout} className="btn-logout">
-          Logout
-        </button>
-      </header>
-
-      <main className="dashboard-main">
-        <div className="dashboard-content-wrapper">
-          {error && (
-            <div style={{ backgroundColor: "var(--color-danger)", color: "white", marginBottom: '1rem', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
-              {error}
-            </div>
+      )}
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Create New Page Section */}
+        <CreatePageForm onPageCreated={handlePageCreated} />
+        
+        {/* Your Pages Section */}
+        <div className="card" style={{ padding: '16px' }}>
+          <h2 style={{ marginBottom: '16px', fontSize: '16px' }}>Your Pages</h2>
+          {loading ? (
+            <p style={{ color: 'var(--color-muted)' }}>Loading pages...</p>
+          ) : (
+            <PageList pages={pages} onDelete={handleDeletePage} />
           )}
-          
-          <div className="dashboard-grid">
-            <div>
-              <CreatePageForm onPageCreated={handlePageCreated} />
-            </div>
-            
-            <div>
-              <h2 style={{ marginBottom: '1.25rem', fontSize: '1.25rem', color: 'var(--color-text)' }}>Your Pages</h2>
-              {loading ? (
-                <p style={{ color: 'var(--color-muted)' }}>Loading pages...</p>
-              ) : (
-                <PageList pages={pages} onDelete={handleDeletePage} />
-              )}
-            </div>
-          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </PortalLayout>
   );
 };
 

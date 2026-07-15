@@ -1,23 +1,47 @@
 :root {
+  /* TMPA Corporate Colors */
   --color-primary: #07142f;
-  --color-primary-light: #102a5c;
+  --color-secondary: #1d4f91;
   --color-accent: #0284c7;
-  --color-bg: #f4f7fb;
+  
+  /* Backgrounds & Surfaces */
+  --color-bg: #eef3f8;
   --color-card: #ffffff;
-  --color-border: #dbe4f0;
+  
+  /* Text & Borders */
+  --color-border: #d9e2ec;
+  --color-border-light: #e2e8f0;
+  --color-text: #1e293b;
   --color-muted: #64748b;
-  --color-text: #0f172a;
-  --color-success: #16a34a;
+  --color-muted-light: #94a3b8;
+  
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-success-bg: #ecfdf5;
   --color-warning: #f59e0b;
-  --color-danger: #dc2626;
-  --shadow-card: 0 12px 30px rgba(15, 23, 42, 0.08);
-  --radius-lg: 18px;
-  --radius-md: 12px;
+  --color-warning-bg: #fffbeb;
+  --color-danger: #ef4444;
+  --color-danger-bg: #fef2f2;
+  --color-info: #3b82f6;
+  --color-info-bg: #eff6ff;
+  --color-draft: #64748b;
+  --color-draft-bg: #f1f5f9;
+  --color-published: #8b5cf6;
+  --color-published-bg: #f5f3ff;
+  
+  /* Layout */
+  --sidebar-width: 160px;
+  --topbar-height: 56px;
+  
+  /* Utils */
+  --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-header: 0 1px 2px rgba(0,0,0,0.05);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 }
 
-html,
-body,
-#root {
+html, body, #root {
   width: 100%;
   min-height: 100vh;
   margin: 0;
@@ -25,163 +49,105 @@ body,
 }
 
 body {
-  background: var(--color-bg);
+  background-color: var(--color-bg);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* Global Badges */
-.badge-draft {
-  background-color: #e0f2fe;
-  color: #0284c7;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
+/* Global Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-primary);
+  margin-top: 0;
 }
 
-.badge-submitted {
-  background-color: #fef3c7;
-  color: #d97706;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.badge-approved {
-  background-color: #dcfce7;
-  color: #16a34a;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.badge-rejected {
-  background-color: #fee2e2;
-  color: #dc2626;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.badge-published {
-  background-color: #f3e8ff;
-  color: #9333ea;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
+/* Global Cards */
+.card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
 }
 
 /* Global Buttons */
-.btn-primary {
-  padding: 0.5rem 1rem;
-  background-color: var(--color-accent);
-  color: white;
-  border: none;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
   border-radius: var(--radius-md);
-  cursor: pointer;
   font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
   transition: all 0.2s;
+  border: 1px solid transparent;
 }
 
-.btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
+.btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--color-secondary);
+  color: white;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary);
 }
 
 .btn-secondary {
-  padding: 0.5rem 1rem;
-  background-color: var(--color-card);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn-secondary:hover:not(:disabled) {
   background-color: var(--color-bg);
+  color: var(--color-text);
+  border-color: var(--color-border);
 }
-
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.btn-secondary:hover:not(:disabled) {
+  background-color: #e2e8f0;
 }
 
 .btn-success {
-  padding: 0.5rem 1rem;
   background-color: var(--color-success);
   color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
 }
-
 .btn-success:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn-success:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  background-color: #059669;
 }
 
 .btn-danger {
-  padding: 0.5rem 1rem;
   background-color: var(--color-danger);
   color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
 }
-
 .btn-danger:hover:not(:disabled) {
-  opacity: 0.9;
+  background-color: #dc2626;
 }
 
-.btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-logout {
-  padding: 0.5rem 1rem;
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn-logout:hover {
-  background-color: var(--color-primary-light);
-}
-
-/* Global inputs */
-input, textarea {
+/* Global Form Elements */
+input, textarea, select {
   font-family: inherit;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+}
+
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
 }

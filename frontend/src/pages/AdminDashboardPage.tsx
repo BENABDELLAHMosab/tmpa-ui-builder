@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearAuthStorage } from '../utils/authStorage';
 import { pageService } from '../services/page.service';
 import type { UiPage } from '../types/page';
-import '../styles/dashboard.css';
+import PortalLayout from '../components/layout/PortalLayout';
+import StatusBadge from '../components/ui/StatusBadge';
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -28,11 +28,6 @@ const AdminDashboardPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    clearAuthStorage();
-    navigate('/login', { replace: true });
   };
 
   const handleApprove = async (pageId: string) => {
@@ -68,69 +63,81 @@ const AdminDashboardPage = () => {
     }
   };
 
-  if (loading) return <div className="dashboard-layout" style={{ padding: '2rem' }}>Loading requests...</div>;
+  if (loading) {
+    return (
+      <PortalLayout title="Admin Portal">
+        <p style={{ color: 'var(--color-muted)' }}>Loading requests...</p>
+      </PortalLayout>
+    );
+  }
 
   return (
-    <div className="dashboard-layout">
-      <div className="dashboard-header">
-        <div className="dashboard-title">
-          <h1>Admin Dashboard</h1>
-          <p>Manage validation requests and monitor submitted UI pages.</p>
-        </div>
-        <button className="btn-logout" onClick={handleLogout}>Logout</button>
+    <PortalLayout title="Admin Portal">
+      {error && <div style={{ color: 'white', backgroundColor: 'var(--color-danger)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>{error}</div>}
+      {successMessage && <div style={{ color: 'white', backgroundColor: 'var(--color-success)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>{successMessage}</div>}
+      
+      <div className="card" style={{ marginBottom: '2rem', padding: '2rem' }}>
+        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Pending Validation Requests</h2>
+        {pages.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--color-muted)' }}>
+            <p style={{ fontSize: '1.1rem' }}>No pending validation requests.</p>
+            <p>Everything is up to date.</p>
+          </div>
+        ) : (
+          <div className="portal-table-container">
+            <table className="portal-table">
+              <thead>
+                <tr>
+                  <th>Page Name</th>
+                  <th>Developer</th>
+                  <th>Submission Date</th>
+                  <th>Version</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pages.map(page => (
+                  <tr key={page._id}>
+                    <td style={{ fontWeight: 500, color: 'var(--color-primary)' }}>{page.name}</td>
+                    <td>{page.ownerId || 'Unknown'}</td>
+                    <td>{new Date(page.updatedAt).toLocaleDateString()}</td>
+                    <td>v{page.version}</td>
+                    <td><StatusBadge status={page.status} /></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button 
+                          onClick={() => navigate(`/preview/${page._id}`)}
+                          className="btn btn-secondary"
+                          disabled={actionLoadingId === page._id}
+                        >
+                          Preview
+                        </button>
+                        <button 
+                          onClick={() => handleApprove(page._id)}
+                          className="btn btn-success"
+                          disabled={actionLoadingId === page._id}
+                        >
+                          Approve
+                        </button>
+                        <button 
+                          onClick={() => handleReject(page._id)}
+                          className="btn btn-danger"
+                          style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5' }}
+                          disabled={actionLoadingId === page._id}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-      <div className="dashboard-main">
-        <div className="dashboard-content-wrapper">
-          {error && <div style={{ color: 'white', backgroundColor: 'var(--color-danger)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>{error}</div>}
-          {successMessage && <div style={{ color: 'white', backgroundColor: 'var(--color-success)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>{successMessage}</div>}
-          
-          {pages.length === 0 ? (
-            <div className="card">
-              <p style={{ color: 'var(--color-muted)' }}>No pending validation requests. Everything is up to date.</p>
-            </div>
-          ) : (
-            <div className="pages-list">
-              {pages.map(page => (
-                <div key={page._id} className="page-card">
-                  <div className="page-card-info">
-                    <h3>{page.name}</h3>
-                    <p>{page.description || "No description provided"}</p>
-                    <div className="page-card-meta">
-                      <span className="badge-submitted">Submitted</span>
-                      <span>v{page.version}</span>
-                      <span>Updated: {new Date(page.updatedAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <div className="page-card-actions">
-                    <button 
-                      onClick={() => navigate(`/preview/${page._id}`)}
-                      className="btn-secondary"
-                      disabled={actionLoadingId === page._id}
-                    >
-                      Preview
-                    </button>
-                    <button 
-                      onClick={() => handleApprove(page._id)}
-                      className="btn-success"
-                      disabled={actionLoadingId === page._id}
-                    >
-                      {actionLoadingId === page._id ? 'Processing...' : 'Approve'}
-                    </button>
-                    <button 
-                      onClick={() => handleReject(page._id)}
-                      className="btn-danger"
-                      disabled={actionLoadingId === page._id}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    </PortalLayout>
   );
 };
 

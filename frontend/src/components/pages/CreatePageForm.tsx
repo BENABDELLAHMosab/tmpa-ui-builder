@@ -31,41 +31,46 @@ const CreatePageForm = ({ onPageCreated }: CreatePageFormProps) => {
   };
 
   return (
-    <div className="card">
-      <h2 style={{ marginBottom: '1.25rem', fontSize: '1.25rem', color: 'var(--color-text)' }}>Create New Page</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="name">Name</label>
+    <div className="card" style={{ padding: '16px', width: '100%', margin: '0', marginBottom: '16px' }}>
+      <h2 style={{ marginBottom: '12px', fontSize: '16px', textAlign: 'center' }}>Create New Page</h2>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div>
+          <label htmlFor="name" style={{ fontWeight: 600 }}>Name</label>
           <input 
             type="text" 
             id="name"
-            placeholder="Dashboard View"
+            placeholder="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required 
             disabled={loading}
+            style={{ backgroundColor: 'var(--color-bg)' }}
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="description">Description (optional)</label>
-          <textarea 
+        <div>
+          <label htmlFor="description" style={{ fontWeight: 600 }}>Description (optional)</label>
+          <input 
+            type="text"
             id="description"
             placeholder="A view for monitoring metrics"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={loading}
+            style={{ backgroundColor: 'var(--color-bg)' }}
           />
         </div>
         
         {error && (
-          <div style={{ backgroundColor: "var(--color-danger)", color: "white", marginBottom: '1rem', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ backgroundColor: "var(--color-danger)", color: "white", padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
             {error}
           </div>
         )}
 
-        <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%' }}>
-          {loading ? "Creating..." : "Create page"}
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '120px', height: '34px' }}>
+            {loading ? "Creating..." : "Create Page"}
+          </button>
+        </div>
       </form>
     </div>
   );

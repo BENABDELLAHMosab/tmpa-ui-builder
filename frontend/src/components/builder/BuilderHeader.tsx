@@ -1,5 +1,5 @@
 import type { UiPage } from '../../types/page';
-import '../../styles/builder.css';
+import StatusBadge from '../ui/StatusBadge';
 
 interface BuilderHeaderProps {
   page: UiPage;
@@ -13,35 +13,51 @@ interface BuilderHeaderProps {
 
 const BuilderHeader = ({ page, onBack, onSave, onPreview, onSubmitForValidation, submitting, saving }: BuilderHeaderProps) => {
   return (
-    <div className="builder-header">
+    <header className="builder-header">
       <div className="builder-header-info">
-        <h2>{page.name}</h2>
-        <span className="builder-header-status">{page.status}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '226px', borderRight: '1px solid var(--color-border)' }}>
+          <img src="/assets/tmpa-logo.png" alt="TMPA Logo" style={{ height: '60px', width: 'auto' }} />
+        </div>
+        <h2 style={{ marginLeft: '1rem' }}>{page.name}</h2>
         <span className="builder-header-version">v{page.version}</span>
-        {page.description && <p className="builder-header-desc">{page.description}</p>}
+        <StatusBadge status={page.status} />
       </div>
-      <div className="builder-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+
+      <div className="builder-header-actions">
         {page.status === 'draft' && (
-          <button className="btn-secondary" onClick={onSubmitForValidation} disabled={submitting}>
-            {submitting ? 'Submitting...' : 'Submit for validation'}
+          <button 
+            className="btn" 
+            style={{ backgroundColor: 'var(--color-warning)', color: 'white' }}
+            onClick={onSubmitForValidation}
+            disabled={submitting || saving}
+          >
+            {submitting ? 'Submitting...' : 'Submit'}
           </button>
         )}
-        {page.status === 'submitted' && (
-          <span style={{ fontSize: '0.875rem', color: '#f59e0b', fontWeight: 500, marginRight: '0.5rem' }}>
-            Waiting for admin validation
-          </span>
-        )}
-        <button className="btn-secondary" onClick={onPreview}>
+        <button 
+          className="btn" 
+          onClick={onPreview}
+          style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}
+        >
           Preview
         </button>
-        <button className="btn-secondary" onClick={onSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save page'}
+        <button 
+          className="btn" 
+          onClick={onSave}
+          disabled={saving || submitting}
+          style={{ backgroundColor: '#3b82f6', color: 'white' }}
+        >
+          {saving ? 'Saving...' : 'Save'}
         </button>
-        <button className="btn-primary" onClick={onBack}>
+        <button 
+          className="btn" 
+          onClick={onBack} 
+          style={{ backgroundColor: '#0f172a', color: 'white', border: 'none' }}
+        >
           Back to dashboard
         </button>
       </div>
-    </div>
+    </header>
   );
 };
 

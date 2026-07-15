@@ -4,14 +4,16 @@ import { pageService } from '../services/page.service';
 import { getAuthUser, getDashboardPathByRole } from '../utils/authStorage';
 import type { UiPage, BuilderComponent } from '../types/page';
 import PreviewRenderer from '../components/preview/PreviewRenderer';
+import StatusBadge from '../components/ui/StatusBadge';
 import '../styles/preview.css';
-import '../styles/builder.css';
 
 const PreviewPage = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from as string | undefined;
+  
+  const authUser = getAuthUser();
   
   const [page, setPage] = useState<UiPage | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -60,15 +62,15 @@ const PreviewPage = () => {
   };
 
   if (loading) {
-    return <div className="preview-loading">Loading preview...</div>;
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--color-muted)' }}>Loading preview...</div>;
   }
 
-  if (error || !page) {
+  if (error && !page) {
     return (
-      <div className="preview-error">
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '1rem' }}>
         <h2>Error</h2>
-        <p>{error || "Page not found"}</p>
-        <button onClick={handleBackToDashboard} className="btn-primary">
+        <p style={{ color: 'var(--color-danger)' }}>{error}</p>
+        <button onClick={handleBackToDashboard} className="btn btn-primary">
           Back to Dashboard
         </button>
       </div>
@@ -77,34 +79,40 @@ const PreviewPage = () => {
 
   return (
     <div className="preview-layout">
-      <div className="preview-header builder-header">
-        <div className="builder-header-info">
-          <h2>{page.name} <span className="preview-badge">Preview</span></h2>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <span className="builder-header-status">{page.status}</span>
-            <span className="builder-header-version">v{page.version}</span>
-            {page.status === 'submitted' && (
-              <span style={{ fontSize: '0.875rem', color: '#f59e0b', fontWeight: 500 }}>
-                (Waiting for admin validation)
-              </span>
-            )}
+      <header className="preview-topbar">
+        <div className="preview-topbar-info">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '226px', borderRight: '1px solid var(--color-border)' }}>
+            <img src="/assets/tmpa-logo.png" alt="TMPA Logo" style={{ height: '60px', width: 'auto' }} />
           </div>
+          <h2 style={{ marginLeft: '1rem' }}>{page?.name}</h2>
+          {page?.version && <span style={{ color: 'var(--color-muted)', paddingLeft: '1rem', borderLeft: '1px solid var(--color-border-light)' }}>v{page.version}</span>}
+          {page?.status && <StatusBadge status={page.status} />}
         </div>
-        <div className="builder-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn-secondary" onClick={handleBackToBuilder}>
-            Back to builder
-          </button>
-          <button className="btn-primary" onClick={handleBackToDashboard}>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          {authUser?.role === 'user-developer' && (
+            <button 
+              className="btn" 
+              onClick={handleBackToBuilder}
+              style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}
+            >
+              Back to builder
+            </button>
+          )}
+          <button 
+            className="btn" 
+            onClick={handleBackToDashboard} 
+            style={{ backgroundColor: '#0f172a', color: 'white', border: 'none' }}
+          >
             Back to dashboard
           </button>
         </div>
-      </div>
-      
-      <div className="preview-main">
+      </header>
+
+      <main className="preview-main">
         <div className="preview-container">
           <PreviewRenderer components={components} />
         </div>
-      </div>
+      </main>
     </div>
   );
 };
