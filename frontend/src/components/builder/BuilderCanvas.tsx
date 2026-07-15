@@ -1,16 +1,30 @@
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { BuilderComponent } from '../../types/page';
 import '../../styles/builder.css';
 
-interface BuilderCanvasProps {
-  components: BuilderComponent[];
-  selectedComponentId: string | null;
+interface SortableCanvasItemProps {
+  comp: BuilderComponent;
+  isSelected: boolean;
   onSelectComponent: (componentId: string) => void;
 }
 
-const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent }: BuilderCanvasProps) => {
-  const hasComponents = components.length > 0;
+const SortableCanvasItem = ({ comp, isSelected, onSelectComponent }: SortableCanvasItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: comp.id,
+    data: {
+      source: 'canvas',
+      componentId: comp.id,
+    },
+  });
 
-  const renderComponent = (comp: BuilderComponent) => {
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const renderComponent = () => {
     switch (comp.type) {
       case 'Text':
         return <span>{comp.props.text as string}</span>;
@@ -48,25 +62,56 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent }: B
   };
 
   return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`canvas-item ${isSelected ? 'selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
+      onClick={() => onSelectComponent(comp.id)}
+    >
+      {renderComponent()}
+    </div>
+  );
+};
+
+interface BuilderCanvasProps {
+  components: BuilderComponent[];
+  selectedComponentId: string | null;
+  onSelectComponent: (componentId: string) => void;
+}
+
+const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent }: BuilderCanvasProps) => {
+  const hasComponents = components.length > 0;
+  
+  const { isOver, setNodeRef } = useDroppable({
+    id: 'builder-canvas',
+  });
+
+  return (
     <div className="builder-canvas-container">
       <h3>Canvas</h3>
-      <div className="builder-canvas">
+      <div 
+        ref={setNodeRef}
+        className={`builder-canvas ${isOver ? 'drag-over' : ''}`}
+      >
         {!hasComponents ? (
           <div className="empty-canvas">
-            Empty canvas. Add components from the sidebar.
+            Empty canvas. Click or drag components from the sidebar.
           </div>
         ) : (
-          <div className="canvas-components" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
-            {components.map((comp) => (
-              <div 
-                key={comp.id} 
-                className={`canvas-item ${comp.id === selectedComponentId ? 'selected' : ''}`}
-                onClick={() => onSelectComponent(comp.id)}
-              >
-                {renderComponent(comp)}
-              </div>
-            ))}
-          </div>
+          <SortableContext items={components.map(c => c.id)} strategy={verticalListSortingStrategy}>
+            <div className="canvas-components" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+              {components.map((comp) => (
+                <SortableCanvasItem
+                  key={comp.id}
+                  comp={comp}
+                  isSelected={comp.id === selectedComponentId}
+                  onSelectComponent={onSelectComponent}
+                />
+              ))}
+            </div>
+          </SortableContext>
         )}
       </div>
     </div>

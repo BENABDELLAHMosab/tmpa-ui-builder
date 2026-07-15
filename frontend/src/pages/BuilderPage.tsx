@@ -7,6 +7,37 @@ import ComponentSidebar from '../components/builder/ComponentSidebar';
 import BuilderCanvas from '../components/builder/BuilderCanvas';
 import PropertiesPanel from '../components/builder/PropertiesPanel';
 import '../styles/builder.css';
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragOverlay
+} from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
+
+const createBuilderComponent = (type: BuilderComponentType): BuilderComponent => {
+  const newId = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  let defaultProps: Record<string, unknown> = {};
+
+  switch (type) {
+    case 'Text': defaultProps = { text: "New text" }; break;
+    case 'Button': defaultProps = { label: "Button" }; break;
+    case 'Input': defaultProps = { placeholder: "Enter value" }; break;
+    case 'Card': defaultProps = { title: "Card title", content: "Card content" }; break;
+    case 'Table': defaultProps = { columns: ["Column 1", "Column 2"] }; break;
+  }
+
+  return {
+    id: newId,
+    type,
+    props: defaultProps
+  };
+};
 
 const BuilderPage = () => {
   const { pageId } = useParams<{ pageId: string }>();
@@ -18,10 +49,22 @@ const BuilderPage = () => {
 
   const [components, setComponents] = useState<BuilderComponent[]>([]);
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  const [activeSidebarType, setActiveSidebarType] = useState<BuilderComponentType | null>(null);
   
   const [saving, setSaving] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -48,26 +91,14 @@ const BuilderPage = () => {
     fetchPage();
   }, [pageId]);
 
+  const isValidComponentType = (type: unknown): type is BuilderComponentType => {
+    return typeof type === 'string' && ['Text', 'Button', 'Input', 'Card', 'Table'].includes(type);
+  };
+
   const handleAddComponent = (type: BuilderComponentType) => {
-    const newId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    let defaultProps: Record<string, unknown> = {};
-
-    switch (type) {
-      case 'Text': defaultProps = { text: "New text" }; break;
-      case 'Button': defaultProps = { label: "Button" }; break;
-      case 'Input': defaultProps = { placeholder: "Enter value" }; break;
-      case 'Card': defaultProps = { title: "Card title", content: "Card content" }; break;
-      case 'Table': defaultProps = { columns: ["Column 1", "Column 2"] }; break;
-    }
-
-    const newComponent: BuilderComponent = {
-      id: newId,
-      type,
-      props: defaultProps
-    };
-
-    setComponents([...components, newComponent]);
-    setSelectedComponentId(newId);
+    const newComponent = createBuilderComponent(type);
+    setComponents(prev => [...prev, newComponent]);
+    setSelectedComponentId(newComponent.id);
   };
 
   const handleSelectComponent = (componentId: string) => {
@@ -75,13 +106,13 @@ const BuilderPage = () => {
   };
 
   const handleUpdateComponent = (componentId: string, newProps: Record<string, unknown>) => {
-    setComponents(components.map(comp => 
+    setComponents(prev => prev.map(comp => 
       comp.id === componentId ? { ...comp, props: newProps } : comp
     ));
   };
 
   const handleDeleteComponent = (componentId: string) => {
-    setComponents(components.filter(comp => comp.id !== componentId));
+    setComponents(prev => prev.filter(comp => comp.id !== componentId));
     if (selectedComponentId === componentId) {
       setSelectedComponentId(null);
     }
@@ -136,6 +167,58 @@ const BuilderPage = () => {
     });
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const isSidebarItem = active.data.current?.source === 'sidebar';
+    
+    if (isSidebarItem) {
+      const type = active.data.current?.componentType;
+      if (isValidComponentType(type)) {
+        setActiveSidebarType(type);
+      }
+    }
+  };
+
+  const handleDragCancel = () => {
+    setActiveSidebarType(null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveSidebarType(null);
+    const { active, over } = event;
+
+    if (!over) {
+      return;
+    }
+
+    const isDroppedOnCanvas = over.id === 'builder-canvas' || over.data.current?.source === 'canvas';
+    const isSidebarItem = active.data.current?.source === 'sidebar';
+
+    if (isSidebarItem && isDroppedOnCanvas) {
+      const type = active.data.current?.componentType;
+      if (isValidComponentType(type)) {
+        const newComponent = createBuilderComponent(type);
+        setComponents(prev => [...prev, newComponent]);
+        setSelectedComponentId(newComponent.id);
+      }
+      return;
+    }
+
+    const isCanvasItem = active.data.current?.source === 'canvas';
+    if (isCanvasItem && active.id !== over.id) {
+      setComponents(prev => {
+        const oldIndex = prev.findIndex(comp => comp.id === active.id);
+        const newIndex = prev.findIndex(comp => comp.id === over.id);
+
+        if (oldIndex === -1 || newIndex === -1) {
+          return prev;
+        }
+
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+    }
+  };
+
   if (loading) {
     return <div className="builder-loading">Loading builder...</div>;
   }
@@ -155,47 +238,65 @@ const BuilderPage = () => {
   const selectedComponent = components.find(c => c.id === selectedComponentId) || null;
 
   return (
-    <div className="builder-layout">
-      {page && (
-        <BuilderHeader 
-          page={page} 
-          onBack={() => navigate('/developer/dashboard')} 
-          onSave={handleSave}
-          onPreview={handlePreview}
-          onSubmitForValidation={handleSubmitForValidation}
-          submitting={submitting}
-          saving={saving}
-        />
-      )}
-      
-      {successMessage && (
-        <div className="builder-success-toast">
-          {successMessage}
-        </div>
-      )}
-      
-      {error && page && (
-        <div className="builder-error-toast">
-          {error}
-        </div>
-      )}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className="builder-layout">
+        {page && (
+          <BuilderHeader 
+            page={page} 
+            onBack={() => navigate('/developer/dashboard')} 
+            onSave={handleSave}
+            onPreview={handlePreview}
+            onSubmitForValidation={handleSubmitForValidation}
+            submitting={submitting}
+            saving={saving}
+          />
+        )}
+        
+        {successMessage && (
+          <div className="builder-success-toast">
+            {successMessage}
+          </div>
+        )}
+        
+        {error && page && (
+          <div className="builder-error-toast">
+            {error}
+          </div>
+        )}
 
-      <div className="builder-main">
-        <ComponentSidebar onAddComponent={handleAddComponent} />
-        
-        <BuilderCanvas 
-          components={components} 
-          selectedComponentId={selectedComponentId} 
-          onSelectComponent={handleSelectComponent}
-        />
-        
-        <PropertiesPanel 
-          selectedComponent={selectedComponent}
-          onUpdateProps={handleUpdateComponent}
-          onDelete={handleDeleteComponent}
-        />
+        <div className="builder-main">
+          <ComponentSidebar onAddComponent={handleAddComponent} />
+          
+          <BuilderCanvas 
+            components={components} 
+            selectedComponentId={selectedComponentId} 
+            onSelectComponent={handleSelectComponent}
+          />
+          
+          <PropertiesPanel 
+            selectedComponent={selectedComponent}
+            onUpdateProps={handleUpdateComponent}
+            onDelete={handleDeleteComponent}
+          />
+        </div>
       </div>
-    </div>
+      {createPortal(
+        <DragOverlay zIndex={2000} dropAnimation={null}>
+          {activeSidebarType ? (
+            <div className="drag-overlay-item">
+              {activeSidebarType}
+            </div>
+          ) : null}
+        </DragOverlay>,
+        document.body
+      )}
+    </DndContext>
   );
 };
 

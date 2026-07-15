@@ -282,5 +282,28 @@
   to {
     transform: translate(-50%, 0);
     opacity: 1;
-  }
+}
+
+.drag-over {
+  background-color: var(--color-info-bg);
+  border: 2px dashed var(--color-secondary);
+  transition: all 0.2s ease-in-out;
+}
+
+.is-dragging {
+  opacity: 0.5;
+  cursor: grabbing !important;
+}
+
+.drag-overlay-item {
+  background-color: #ffffff;
+  border: 2px solid var(--color-secondary);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  pointer-events: none;
+  cursor: grabbing;
 }
