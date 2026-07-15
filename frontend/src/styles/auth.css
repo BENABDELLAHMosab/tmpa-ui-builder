@@ -44,13 +44,14 @@
   font-size: 3rem;
   font-weight: 700;
   margin: 0 0 1rem 0;
+  color: #26b3d2;
 }
 
 .auth-subtitle {
   font-size: 1.2rem;
   font-weight: 700;
   margin: 0 0 2rem 0;
-  color: #000000; /* Cyan accent */
+  color: #aebbc3; /* Cyan accent */
 }
 
 .auth-description {

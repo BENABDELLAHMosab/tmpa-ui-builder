@@ -28,7 +28,9 @@ export const createPage = async (req: Request, res: Response): Promise<void> => 
 export const getPages = async (req: Request, res: Response): Promise<void> => {
   try {
     const query = req.user?.role === "admin" ? {} : { ownerId: req.user?.id };
-    const pages = await Page.find(query).sort({ updatedAt: -1 });
+    const pages = await Page.find(query)
+      .sort({ updatedAt: -1 })
+      .populate('ownerId', 'fullName email');
     res.json(pages);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });

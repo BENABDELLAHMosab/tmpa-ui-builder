@@ -100,7 +100,11 @@ const AdminDashboardPage = () => {
                 {pages.map(page => (
                   <tr key={page._id}>
                     <td style={{ fontWeight: 500, color: 'var(--color-primary)' }}>{page.name}</td>
-                    <td>{page.ownerId || 'Unknown'}</td>
+                    <td>
+                      {typeof page.ownerId === 'object' && page.ownerId !== null 
+                        ? (page.ownerId.fullName || 'Unknown Developer') 
+                        : (page.ownerId || 'Unknown')}
+                    </td>
                     <td>{new Date(page.updatedAt).toLocaleDateString()}</td>
                     <td>v{page.version}</td>
                     <td><StatusBadge status={page.status} /></td>

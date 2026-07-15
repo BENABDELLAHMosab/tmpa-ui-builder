@@ -17,7 +17,7 @@ export interface UiPage {
   _id: string;
   name: string;
   description: string;
-  ownerId: string;
+  ownerId: string | { _id: string; fullName: string; email?: string };
   status: PageStatus;
   schema: PageSchema;
   version: number;
