@@ -29,7 +29,7 @@ const SortableCanvasItem = ({ comp, isSelected, onSelectComponent }: SortableCan
       case 'Text':
         return <span>{comp.props.text as string}</span>;
       case 'Button':
-        return <button className="btn-primary" style={{ width: 'auto' }}>{comp.props.label as string}</button>;
+        return <button className="btn btn-primary" style={{ width: 'auto' }}>{comp.props.label as string}</button>;
       case 'Input':
         return <input type="text" placeholder={comp.props.placeholder as string} disabled className="canvas-input" />;
       case 'Card':

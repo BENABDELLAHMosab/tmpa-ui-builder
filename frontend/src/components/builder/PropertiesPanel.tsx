@@ -100,16 +100,30 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onDelete }: Propert
 
   return (
     <div className="properties-panel">
-      <h3>Properties</h3>
-      <div className="properties-form">
-        {renderProps()}
+      <div className="properties-header">
+        <h3>Properties</h3>
+        <span className="properties-badge">{selectedComponent.type}</span>
       </div>
-      <button 
-        className="btn-danger mt-4" 
-        onClick={() => onDelete(selectedComponent.id)}
-      >
-        Delete component
-      </button>
+      
+      <div className="properties-content">
+        <div className="properties-form">
+          {renderProps()}
+        </div>
+      </div>
+
+      <div className="properties-footer">
+        <button 
+          className="btn btn-danger" 
+          onClick={() => onDelete(selectedComponent.id)}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          </svg>
+          Delete component
+        </button>
+      </div>
     </div>
   );
 };

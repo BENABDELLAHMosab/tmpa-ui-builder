@@ -15,10 +15,12 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onSubmitForValidation,
   return (
     <header className="builder-header">
       <div className="builder-header-info">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '226px', borderRight: '1px solid var(--color-border)' }}>
-          <img src="/assets/tmpa-logo.png" alt="TMPA Logo" style={{ height: '60px', width: 'auto' }} />
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', width: '220px', height: '100%', padding: '0 20px', backgroundColor: 'var(--navy-800)' }}>
+          <div style={{ position: 'absolute', bottom: '-1px', left: 0, right: 0, height: '1px', backgroundColor: 'var(--navy-800)' }} />
+          <div style={{ position: 'absolute', bottom: '-1px', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+          <img src="/assets/2-TMPA.png" alt="TMPA Logo" style={{ maxWidth: '170px', height: 'auto', objectFit: 'contain' }} />
         </div>
-        <h2 style={{ marginLeft: '1rem' }}>{page.name}</h2>
+        <h2 style={{ marginLeft: '0.5rem' }}>{page.name}</h2>
         <span className="builder-header-version">v{page.version}</span>
         <StatusBadge status={page.status} />
       </div>

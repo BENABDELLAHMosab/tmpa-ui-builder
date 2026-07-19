@@ -80,11 +80,13 @@ const PreviewPage = () => {
   return (
     <div className="preview-layout">
       <header className="preview-topbar">
-        <div className="preview-topbar-info" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '226px', borderRight: '1px solid var(--border-primary)' }}>
-            <img src="/assets/tmpa-logo.png" alt="TMPA Logo" style={{ height: '60px', width: 'auto' }} />
+        <div className="preview-topbar-info">
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', width: '220px', height: '100%', padding: '0 20px', backgroundColor: 'var(--navy-800)' }}>
+            <div style={{ position: 'absolute', bottom: '-1px', left: 0, right: 0, height: '1px', backgroundColor: 'var(--navy-800)' }} />
+            <div style={{ position: 'absolute', bottom: '-1px', left: 0, right: 0, height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+            <img src="/assets/2-TMPA.png" alt="TMPA Logo" style={{ maxWidth: '170px', height: 'auto', objectFit: 'contain' }} />
           </div>
-          <h2 style={{ marginLeft: '1rem', color: 'var(--text-primary)', margin: 0, fontSize: '1.25rem' }}>{page?.name}</h2>
+          <h2 style={{ marginLeft: '0.5rem', color: 'var(--text-primary)', margin: 0, fontSize: '1.25rem' }}>{page?.name}</h2>
           {page?.version && <span style={{ color: 'var(--text-secondary)', paddingLeft: '1rem', borderLeft: '1px solid var(--border-primary)', fontSize: '0.85rem', fontWeight: 500 }}>v{page.version}</span>}
           {page?.status && <StatusBadge status={page.status} />}
         </div>
@@ -107,11 +109,37 @@ const PreviewPage = () => {
         </div>
       </header>
 
-      <main className="preview-main">
-        <div className="preview-container">
-          <PreviewRenderer components={components} />
-        </div>
-      </main>
+      <div className="preview-main-wrapper">
+        <aside className="preview-sidebar">
+          <h3>Versions</h3>
+          <div className="preview-sidebar-list">
+            {page && Array.from({ length: page.version }, (_, i) => page.version - i).map((v) => (
+              <div 
+                key={v} 
+                className="preview-sidebar-item" 
+                style={{ 
+                  cursor: 'pointer', 
+                  opacity: v === page.version ? 1 : 0.6,
+                  borderLeft: v === page.version ? '3px solid var(--primary-500)' : '1px solid transparent',
+                  backgroundColor: v === page.version ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.02)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <span>Version {v}</span>
+                {v === page.version && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 600 }}>ACTUELLE</span>}
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        <main className="preview-main">
+          <div className="preview-container">
+            <PreviewRenderer components={components} />
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

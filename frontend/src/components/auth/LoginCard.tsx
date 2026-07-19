@@ -45,7 +45,7 @@ const LoginCard = () => {
             type="email" 
             id="email"
             className="form-input" 
-            placeholder="developer@tmpa.ma"
+            placeholder="user@tmpa.ma"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required 
