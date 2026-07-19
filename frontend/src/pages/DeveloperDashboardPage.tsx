@@ -4,11 +4,13 @@ import type { UiPage } from '../types/page';
 import PortalLayout from '../components/layout/PortalLayout';
 import CreatePageForm from '../components/pages/CreatePageForm';
 import PageList from '../components/pages/PageList';
+import '../styles/dashboard.css';
 
 const DeveloperDashboardPage = () => {
   const [pages, setPages] = useState<UiPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPages();
@@ -27,6 +29,7 @@ const DeveloperDashboardPage = () => {
 
   const handlePageCreated = (newPage: UiPage) => {
     setPages((prev) => [newPage, ...prev]);
+    setIsCreateModalOpen(false);
   };
 
   const handleDeletePage = async (pageId: string) => {
@@ -38,6 +41,13 @@ const DeveloperDashboardPage = () => {
     }
   };
 
+  const stats = {
+    total: pages.length,
+    pending: pages.filter(p => p.status === 'submitted').length,
+    approved: pages.filter(p => p.status === 'approved').length,
+    published: pages.filter(p => p.status === 'published').length
+  };
+
   return (
     <PortalLayout title="Developer Dashboard">
       {error && (
@@ -45,21 +55,65 @@ const DeveloperDashboardPage = () => {
           {error}
         </div>
       )}
-      
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Create New Page Section */}
-        <CreatePageForm onPageCreated={handlePageCreated} />
-        
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: '28px', color: 'var(--text-primary)', margin: 0, fontWeight: 700, letterSpacing: '-0.01em' }}>Developer Dashboard</h1>
+          </div>
+          <button 
+            className="btn btn-primary" 
+            onClick={() => setIsCreateModalOpen(true)}
+            style={{ padding: '0.6rem 1.25rem', fontSize: '14px', fontWeight: 500 }}
+          >
+            Create New Page
+          </button>
+        </div>
+
+        <section className="stats-grid">
+          <article className="stat-card">
+            <span className="stat-card__label">Total Pages</span>
+            <strong className="stat-card__value">{stats.total}</strong>
+          </article>
+          <article className="stat-card">
+            <span className="stat-card__label">Pending</span>
+            <strong className="stat-card__value">{stats.pending}</strong>
+          </article>
+          <article className="stat-card">
+            <span className="stat-card__label">Approved</span>
+            <strong className="stat-card__value">{stats.approved}</strong>
+          </article>
+          <article className="stat-card">
+            <span className="stat-card__label">Published</span>
+            <strong className="stat-card__value">{stats.published}</strong>
+          </article>
+        </section>
+
         {/* Your Pages Section */}
-        <div className="card" style={{ padding: '16px' }}>
-          <h2 style={{ marginBottom: '16px', fontSize: '16px' }}>Your Pages</h2>
-          {loading ? (
-            <p style={{ color: 'var(--color-muted)' }}>Loading pages...</p>
-          ) : (
-            <PageList pages={pages} onDelete={handleDeletePage} />
-          )}
+        <div className="card" style={{ padding: '0' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid var(--color-border-light)' }}>
+            <h2 style={{ margin: 0, fontSize: '16px', color: 'var(--color-primary)' }}>Your Pages</h2>
+          </div>
+          <div style={{ padding: '20px' }}>
+            {loading ? (
+              <p style={{ color: 'var(--color-muted)' }}>Loading pages...</p>
+            ) : (
+              <PageList pages={pages} onDelete={handleDeletePage} />
+            )}
+          </div>
         </div>
       </div>
+
+      {isCreateModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-24px', position: 'relative', zIndex: 10 }}>
+              <button onClick={() => setIsCreateModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'var(--color-muted)' }}>&times;</button>
+            </div>
+            <CreatePageForm onPageCreated={handlePageCreated} />
+          </div>
+        </div>
+      )}
     </PortalLayout>
   );
 };

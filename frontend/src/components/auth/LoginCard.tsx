@@ -35,7 +35,7 @@ const LoginCard = () => {
 
   return (
     <div className="login-card">
-      <h2 className="login-title">Welcome back</h2>
+      <h2 className="login-title">Welcome Back</h2>
       <p className="login-subtitle">Sign in to access your developer workspace</p>
       
       <form onSubmit={handleSubmit}>
@@ -64,6 +64,13 @@ const LoginCard = () => {
             required 
             disabled={loading}
           />
+        </div>
+        <div className="login-options">
+          <label className="remember-me">
+            <input type="checkbox" />
+            <span>Remember me</span>
+          </label>
+          <a href="#" className="forgot-password" onClick={(e) => e.preventDefault()}>Forgot password?</a>
         </div>
         
         <button type="submit" className="btn-primary" disabled={loading}>

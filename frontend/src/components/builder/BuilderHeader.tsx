@@ -23,36 +23,35 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onSubmitForValidation,
         <StatusBadge status={page.status} />
       </div>
 
-      <div className="builder-header-actions">
+      <div className="builder-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
         {page.status === 'draft' && (
-          <button 
-            className="btn" 
-            style={{ backgroundColor: 'var(--color-warning)', color: 'white' }}
+          <button
+            className="btn btn-warning"
+            style={{ backgroundColor: 'var(--status-pending)', color: 'white', border: 'none' }}
             onClick={onSubmitForValidation}
             disabled={submitting || saving}
           >
             {submitting ? 'Submitting...' : 'Submit'}
           </button>
         )}
-        <button 
-          className="btn" 
+        <button
+          className="btn"
           onClick={onPreview}
-          style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}
+          style={{ backgroundColor: 'var(--surface-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)' }}
         >
           Preview
         </button>
-        <button 
-          className="btn" 
+        <button
+          className="btn btn-primary"
           onClick={onSave}
           disabled={saving || submitting}
-          style={{ backgroundColor: '#3b82f6', color: 'white' }}
         >
           {saving ? 'Saving...' : 'Save'}
         </button>
-        <button 
-          className="btn" 
-          onClick={onBack} 
-          style={{ backgroundColor: '#0f172a', color: 'white', border: 'none' }}
+        <button
+          className="btn"
+          onClick={onBack}
+          style={{ backgroundColor: 'var(--navy-950)', color: 'white', border: 'none' }}
         >
           Back to dashboard
         </button>

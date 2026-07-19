@@ -20,7 +20,7 @@ const DraggableSidebarItem = ({ type, onClick }: DraggableSidebarItemProps) => {
   });
 
   return (
-    <button 
+    <button
       ref={setNodeRef}
       {...listeners}
       {...attributes}
@@ -42,10 +42,10 @@ const ComponentSidebar = ({ onAddComponent }: ComponentSidebarProps) => {
       <h3>Components</h3>
       <div className="component-list">
         {components.map((comp) => (
-          <DraggableSidebarItem 
-            key={comp} 
-            type={comp} 
-            onClick={onAddComponent} 
+          <DraggableSidebarItem
+            key={comp}
+            type={comp}
+            onClick={onAddComponent}
           />
         ))}
       </div>

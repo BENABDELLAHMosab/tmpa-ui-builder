@@ -36,20 +36,20 @@ const CreatePageForm = ({ onPageCreated }: CreatePageFormProps) => {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div>
           <label htmlFor="name" style={{ fontWeight: 600 }}>Name</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             id="name"
             placeholder="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            required 
+            required
             disabled={loading}
             style={{ backgroundColor: 'var(--color-bg)' }}
           />
         </div>
         <div>
           <label htmlFor="description" style={{ fontWeight: 600 }}>Description (optional)</label>
-          <input 
+          <input
             type="text"
             id="description"
             placeholder="A view for monitoring metrics"
@@ -59,7 +59,7 @@ const CreatePageForm = ({ onPageCreated }: CreatePageFormProps) => {
             style={{ backgroundColor: 'var(--color-bg)' }}
           />
         </div>
-        
+
         {error && (
           <div style={{ backgroundColor: "var(--color-danger)", color: "white", padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
             {error}

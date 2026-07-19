@@ -43,14 +43,13 @@ const PageList = ({ pages, onDelete }: PageListProps) => {
               <td>{new Date(page.updatedAt).toLocaleDateString()}</td>
               <td>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button 
+                  <button
                     onClick={() => navigate(`/builder/${page._id}`)}
-                    className="btn"
-                    style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}
+                    className="btn btn-primary"
                   >
                     Open Builder
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDelete(page._id)}
                     className="btn"
                     style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #ef4444' }}

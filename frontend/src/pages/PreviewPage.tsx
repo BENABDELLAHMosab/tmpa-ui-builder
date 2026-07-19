@@ -12,9 +12,9 @@ const PreviewPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from as string | undefined;
-  
+
   const authUser = getAuthUser();
-  
+
   const [page, setPage] = useState<UiPage | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,28 +80,27 @@ const PreviewPage = () => {
   return (
     <div className="preview-layout">
       <header className="preview-topbar">
-        <div className="preview-topbar-info">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '226px', borderRight: '1px solid var(--color-border)' }}>
+        <div className="preview-topbar-info" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '226px', borderRight: '1px solid var(--border-primary)' }}>
             <img src="/assets/tmpa-logo.png" alt="TMPA Logo" style={{ height: '60px', width: 'auto' }} />
           </div>
-          <h2 style={{ marginLeft: '1rem' }}>{page?.name}</h2>
-          {page?.version && <span style={{ color: 'var(--color-muted)', paddingLeft: '1rem', borderLeft: '1px solid var(--color-border-light)' }}>v{page.version}</span>}
+          <h2 style={{ marginLeft: '1rem', color: 'var(--text-primary)', margin: 0, fontSize: '1.25rem' }}>{page?.name}</h2>
+          {page?.version && <span style={{ color: 'var(--text-secondary)', paddingLeft: '1rem', borderLeft: '1px solid var(--border-primary)', fontSize: '0.85rem', fontWeight: 500 }}>v{page.version}</span>}
           {page?.status && <StatusBadge status={page.status} />}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           {authUser?.role === 'user-developer' && (
-            <button 
-              className="btn" 
+            <button
+              className="btn btn-secondary"
               onClick={handleBackToBuilder}
-              style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}
             >
               Back to builder
             </button>
           )}
-          <button 
-            className="btn" 
-            onClick={handleBackToDashboard} 
-            style={{ backgroundColor: '#0f172a', color: 'white', border: 'none' }}
+          <button
+            className="btn btn-primary"
+            onClick={handleBackToDashboard}
+            style={{ backgroundColor: 'var(--navy-950)' }}
           >
             Back to dashboard
           </button>
