@@ -32,6 +32,8 @@ const PreviewRenderer = ({ components }: PreviewRendererProps) => {
             top: comp.layout?.y ?? 0,
             width: comp.layout?.width ?? 300,
             height: comp.layout?.height ?? 60,
+            overflow: 'hidden',
+            boxSizing: 'border-box',
           }}
         >
           <ComponentRenderer component={comp} />

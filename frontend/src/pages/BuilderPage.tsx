@@ -17,7 +17,7 @@ import {
   DragOverlay
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { clamp, normalizeComponentsLayout, DEFAULT_LAYOUTS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/canvas';
+import { clamp, normalizeComponentsLayout, DEFAULT_LAYOUTS, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../utils/canvas';
 import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number): BuilderComponent => {
@@ -167,12 +167,13 @@ const BuilderPage = () => {
       prev.map(comp => {
         if (comp.id !== componentId) return comp;
         
+        const minDims = MIN_DIMENSIONS_BY_TYPE[comp.type] ?? { width: 50, height: 20 };
         let safeValue = value;
         if (typeof value === 'number') {
           if (key === 'x') safeValue = clamp(value, 0, CANVAS_WIDTH - (comp.layout?.width ?? 0)) as any;
           else if (key === 'y') safeValue = clamp(value, 0, CANVAS_HEIGHT - (comp.layout?.height ?? 0)) as any;
-          else if (key === 'width') safeValue = clamp(value, 50, CANVAS_WIDTH - (comp.layout?.x ?? 0)) as any;
-          else if (key === 'height') safeValue = clamp(value, 20, CANVAS_HEIGHT - (comp.layout?.y ?? 0)) as any;
+          else if (key === 'width') safeValue = clamp(value, minDims.width, CANVAS_WIDTH - (comp.layout?.x ?? 0)) as any;
+          else if (key === 'height') safeValue = clamp(value, minDims.height, CANVAS_HEIGHT - (comp.layout?.y ?? 0)) as any;
         }
         
         return {
@@ -185,6 +186,24 @@ const BuilderPage = () => {
       })
     );
   };
+
+  const handleResizeComponent = (componentId: string, dimensions: { width: number; height: number }) => {
+    setComponents(prev =>
+      prev.map(comp => {
+        if (comp.id !== componentId) return comp;
+        
+        return {
+          ...comp,
+          layout: {
+            ...(comp.layout ?? {}),
+            width: dimensions.width,
+            height: dimensions.height
+          }
+        };
+      })
+    );
+  };
+
 
   const handleDeleteComponent = (componentId: string) => {
     setComponents(prev => prev.filter(comp => comp.id !== componentId));
@@ -376,6 +395,7 @@ const BuilderPage = () => {
             components={components} 
             selectedComponentId={selectedComponentId} 
             onSelectComponent={handleSelectComponent}
+            onResizeComponent={handleResizeComponent}
             canvasRef={canvasRef}
           />
           
