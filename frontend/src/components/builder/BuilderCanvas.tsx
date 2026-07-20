@@ -24,7 +24,8 @@ const DraggableCanvasItem = ({ comp, isSelected, onSelectComponent }: DraggableC
     left: comp.layout?.x ?? 0,
     top: comp.layout?.y ?? 0,
     width: comp.layout?.width ?? 300,
-    height: comp.layout?.height ?? 60,
+    height: comp.type === 'Text' ? 'auto' : (comp.layout?.height ?? 60),
+    minHeight: comp.type === 'Text' ? (comp.layout?.height ?? 60) : undefined,
     transform: CSS.Translate.toString(transform),
     zIndex: isDragging ? 1000 : 1,
     padding: 0,
@@ -33,10 +34,13 @@ const DraggableCanvasItem = ({ comp, isSelected, onSelectComponent }: DraggableC
     borderRadius: 'var(--radius-md)',
     cursor: 'pointer',
     transition: isDragging ? 'none' : 'box-shadow 0.2s',
+    boxSizing: 'border-box',
+    overflow: 'hidden'
   };
 
   return (
     <div
+      id={comp.id}
       ref={setNodeRef}
       style={style}
       {...attributes}

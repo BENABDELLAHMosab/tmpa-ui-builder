@@ -171,6 +171,8 @@ const BuilderPage = () => {
         if (typeof value === 'number') {
           if (key === 'x') safeValue = clamp(value, 0, CANVAS_WIDTH - (comp.layout?.width ?? 0)) as any;
           else if (key === 'y') safeValue = clamp(value, 0, CANVAS_HEIGHT - (comp.layout?.height ?? 0)) as any;
+          else if (key === 'width') safeValue = clamp(value, 50, CANVAS_WIDTH - (comp.layout?.x ?? 0)) as any;
+          else if (key === 'height') safeValue = clamp(value, 20, CANVAS_HEIGHT - (comp.layout?.y ?? 0)) as any;
         }
         
         return {
@@ -264,8 +266,12 @@ const BuilderPage = () => {
     if (isCanvasItem) {
       setComponents(prev => prev.map(comp => {
         if (comp.id === active.id) {
-          const newX = clamp((comp.layout?.x ?? 0) + delta.x, 0, CANVAS_WIDTH - (comp.layout?.width ?? 0));
-          const newY = clamp((comp.layout?.y ?? 0) + delta.y, 0, CANVAS_HEIGHT - (comp.layout?.height ?? 0));
+          const domNode = document.getElementById(active.id as string);
+          const actualWidth = domNode ? domNode.offsetWidth : (comp.layout?.width ?? 0);
+          const actualHeight = domNode ? domNode.offsetHeight : (comp.layout?.height ?? 0);
+
+          const newX = clamp((comp.layout?.x ?? 0) + delta.x, 0, CANVAS_WIDTH - actualWidth);
+          const newY = clamp((comp.layout?.y ?? 0) + delta.y, 0, CANVAS_HEIGHT - actualHeight);
           return {
             ...comp,
             layout: {
