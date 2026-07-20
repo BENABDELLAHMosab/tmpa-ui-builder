@@ -100,14 +100,14 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
 
   if (loading) {
     return (
-      <PortalLayout title={view === 'pending' ? 'Pending Requests' : 'Publication'}>
+      <PortalLayout>
         <p style={{ color: 'var(--color-muted)' }}>Loading requests...</p>
       </PortalLayout>
     );
   }
 
   return (
-    <PortalLayout title={view === 'pending' ? 'Pending Requests' : 'Publication'}>
+    <PortalLayout>
       {error && <div style={{ color: 'white', backgroundColor: 'var(--color-danger)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>{error}</div>}
       {successMessage && <div style={{ color: 'white', backgroundColor: 'var(--color-success)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>{successMessage}</div>}
 

@@ -1,11 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { clearAuthStorage } from '../../utils/authStorage';
 
-interface TopbarProps {
-  title: string;
-}
-
-const Topbar = ({ title }: TopbarProps) => {
+const Topbar = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {

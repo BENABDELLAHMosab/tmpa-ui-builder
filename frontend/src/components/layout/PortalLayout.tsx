@@ -5,15 +5,14 @@ import '../../styles/layout.css';
 
 interface PortalLayoutProps {
   children: ReactNode;
-  title: string;
 }
 
-const PortalLayout = ({ children, title }: PortalLayoutProps) => {
+const PortalLayout = ({ children }: PortalLayoutProps) => {
   return (
     <div className="portal-layout">
       <Sidebar />
       <div className="portal-main-wrapper">
-        <Topbar title={title} />
+        <Topbar />
         <main className="portal-content">
           {children}
         </main>

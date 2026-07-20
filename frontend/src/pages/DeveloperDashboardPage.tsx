@@ -49,7 +49,7 @@ const DeveloperDashboardPage = () => {
   };
 
   return (
-    <PortalLayout title="Developer Dashboard">
+    <PortalLayout>
       {error && (
         <div style={{ backgroundColor: "var(--color-danger)", color: "white", marginBottom: '1.5rem', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
           {error}
