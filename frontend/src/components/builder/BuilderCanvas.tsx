@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BuilderComponent } from '../../types/page';
+import ComponentRenderer from '../renderers/ComponentRenderer';
 import '../../styles/builder.css';
 
 interface SortableCanvasItemProps {
@@ -25,40 +26,7 @@ const SortableCanvasItem = ({ comp, isSelected, onSelectComponent }: SortableCan
   };
 
   const renderComponent = () => {
-    switch (comp.type) {
-      case 'Text':
-        return <span>{comp.props.text as string}</span>;
-      case 'Button':
-        return <button className="btn btn-primary" style={{ width: 'auto' }}>{comp.props.label as string}</button>;
-      case 'Input':
-        return <input type="text" placeholder={comp.props.placeholder as string} disabled className="canvas-input" />;
-      case 'Card':
-        return (
-          <div className="canvas-card">
-            <h4>{comp.props.title as string}</h4>
-            <p>{comp.props.content as string}</p>
-          </div>
-        );
-      case 'Table':
-        return (
-          <table className="canvas-table">
-            <thead>
-              <tr>
-                {((comp.props.columns as string[]) || []).map((col, idx) => (
-                  <th key={idx}>{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan={((comp.props.columns as string[]) || []).length} className="text-center text-muted" style={{ textAlign: 'center', color: '#94a3b8', padding: '1rem' }}>No data</td>
-              </tr>
-            </tbody>
-          </table>
-        );
-      default:
-        return null;
-    }
+    return <ComponentRenderer component={comp} />;
   };
 
   return (

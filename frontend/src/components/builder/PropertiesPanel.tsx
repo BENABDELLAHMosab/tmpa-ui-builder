@@ -1,13 +1,15 @@
-import type { BuilderComponent } from '../../types/page';
+import type { BuilderComponent, BuilderComponentStyle, BuilderComponentLayout, BuilderFontWeight, BuilderTextAlign, BuilderFontFamily, BuilderFontStyle } from '../../types/page';
 import '../../styles/builder.css';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
   onUpdateProps: (componentId: string, newProps: Record<string, unknown>) => void;
+  onUpdateStyle?: <K extends keyof BuilderComponentStyle>(componentId: string, key: K, value: BuilderComponentStyle[K]) => void;
+  onUpdateLayout?: <K extends keyof BuilderComponentLayout>(componentId: string, key: K, value: BuilderComponentLayout[K]) => void;
   onDelete: (componentId: string) => void;
 }
 
-const PropertiesPanel = ({ selectedComponent, onUpdateProps, onDelete }: PropertiesPanelProps) => {
+const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUpdateLayout, onDelete }: PropertiesPanelProps) => {
   if (!selectedComponent) {
     return (
       <div className="properties-panel empty">
@@ -23,18 +25,156 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onDelete }: Propert
     });
   };
 
+  const handleStyleChange = <K extends keyof BuilderComponentStyle>(key: K, value: BuilderComponentStyle[K]) => {
+    if (onUpdateStyle) {
+      onUpdateStyle(selectedComponent.id, key, value);
+    }
+  };
+
+  const handleLayoutChange = <K extends keyof BuilderComponentLayout>(key: K, value: BuilderComponentLayout[K]) => {
+    if (onUpdateLayout) {
+      onUpdateLayout(selectedComponent.id, key, value);
+    }
+  };
+
   const renderProps = () => {
     switch (selectedComponent.type) {
       case 'Text':
         return (
-          <div className="prop-group">
-            <label>Text</label>
-            <input 
-              type="text" 
-              value={(selectedComponent.props.text as string) || ''} 
-              onChange={(e) => handlePropChange('text', e.target.value)} 
-            />
-          </div>
+          <>
+            <div className="prop-group">
+              <label style={{ fontWeight: 600, marginTop: '10px', display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Content</label>
+              <label>Text content</label>
+              <input 
+                type="text" 
+                value={(selectedComponent.props.text as string) || ''} 
+                onChange={(e) => handlePropChange('text', e.target.value)} 
+              />
+            </div>
+            
+            <div className="prop-group">
+              <label style={{ fontWeight: 600, marginTop: '10px', display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Typography</label>
+              
+              <label>Font family</label>
+              <select 
+                value={selectedComponent.style?.fontFamily ?? "Inter"} 
+                onChange={(e) => handleStyleChange('fontFamily', e.target.value as BuilderFontFamily)}
+              >
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Open Sans">Open Sans</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Calibri">Calibri</option>
+                <option value="Arial">Arial</option>
+                <option value="system-ui">System UI</option>
+              </select>
+
+              <label>Font style</label>
+              <select 
+                value={selectedComponent.style?.fontStyle ?? "normal"} 
+                onChange={(e) => handleStyleChange('fontStyle', e.target.value as BuilderFontStyle)}
+              >
+                <option value="normal">Normal</option>
+                <option value="italic">Italic</option>
+              </select>
+
+              <label>Font size (px)</label>
+              <input 
+                type="number" 
+                min={8} max={96}
+                value={selectedComponent.style?.fontSize ?? 16} 
+                onChange={(e) => {
+                  const val = e.currentTarget.valueAsNumber;
+                  if (!Number.isNaN(val)) handleStyleChange('fontSize', val);
+                }} 
+              />
+              
+              <label>Font weight</label>
+              <select 
+                value={selectedComponent.style?.fontWeight ?? 400} 
+                onChange={(e) => handleStyleChange('fontWeight', parseInt(e.target.value) as BuilderFontWeight)}
+              >
+                <option value={400}>400 (Regular)</option>
+                <option value={500}>500 (Medium)</option>
+                <option value={600}>600 (Semi-bold)</option>
+                <option value={700}>700 (Bold)</option>
+              </select>
+
+              <label>Text align</label>
+              <select 
+                value={selectedComponent.style?.textAlign ?? 'left'} 
+                onChange={(e) => handleStyleChange('textAlign', e.target.value as BuilderTextAlign)}
+              >
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+
+              <label>Text color</label>
+              <input 
+                type="color" 
+                value={selectedComponent.style?.color ?? '#334155'} 
+                onChange={(e) => handleStyleChange('color', e.target.value)} 
+              />
+            </div>
+
+            <div className="prop-group">
+              <label style={{ fontWeight: 600, marginTop: '10px', display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Appearance</label>
+              <label>Background color</label>
+              <input 
+                type="color" 
+                value={selectedComponent.style?.backgroundColor === 'transparent' ? '#ffffff' : (selectedComponent.style?.backgroundColor ?? '#ffffff')} 
+                onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} 
+              />
+              
+              <label>Padding (px)</label>
+              <input 
+                type="number" 
+                min={0} max={100}
+                value={selectedComponent.style?.padding ?? 12} 
+                onChange={(e) => {
+                  const val = e.currentTarget.valueAsNumber;
+                  if (!Number.isNaN(val)) handleStyleChange('padding', val);
+                }} 
+              />
+              
+              <label>Border radius (px)</label>
+              <input 
+                type="number" 
+                min={0} max={100}
+                value={selectedComponent.style?.borderRadius ?? 6} 
+                onChange={(e) => {
+                  const val = e.currentTarget.valueAsNumber;
+                  if (!Number.isNaN(val)) handleStyleChange('borderRadius', val);
+                }} 
+              />
+            </div>
+
+            <div className="prop-group">
+              <label style={{ fontWeight: 600, marginTop: '10px', display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Dimensions</label>
+              <label>Width (px)</label>
+              <input 
+                type="number" 
+                min={50} max={1200}
+                value={selectedComponent.layout?.width ?? 300} 
+                onChange={(e) => {
+                  const val = e.currentTarget.valueAsNumber;
+                  if (!Number.isNaN(val)) handleLayoutChange('width', val);
+                }} 
+              />
+              
+              <label>Min Height (px)</label>
+              <input 
+                type="number" 
+                min={20} max={1000}
+                value={selectedComponent.layout?.height ?? 60} 
+                onChange={(e) => {
+                  const val = e.currentTarget.valueAsNumber;
+                  if (!Number.isNaN(val)) handleLayoutChange('height', val);
+                }} 
+              />
+            </div>
+          </>
         );
       case 'Button':
         return (

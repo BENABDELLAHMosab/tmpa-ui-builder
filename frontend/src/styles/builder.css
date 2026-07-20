@@ -279,12 +279,10 @@
 }
 
 .canvas-item {
-  padding: 1.5rem;
   border: 2px solid transparent;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
-  background-color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 

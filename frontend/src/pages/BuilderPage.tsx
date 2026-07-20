@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pageService } from '../services/page.service';
-import type { UiPage, BuilderComponent, BuilderComponentType } from '../types/page';
+import type { UiPage, BuilderComponent, BuilderComponentType, BuilderComponentStyle, BuilderComponentLayout } from '../types/page';
 import BuilderHeader from '../components/builder/BuilderHeader';
 import ComponentSidebar from '../components/builder/ComponentSidebar';
 import BuilderCanvas from '../components/builder/BuilderCanvas';
@@ -22,10 +22,33 @@ import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType): BuilderComponent => {
   const newId = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  
+  if (type === 'Text') {
+    return {
+      id: newId,
+      type: "Text",
+      props: { text: "New text" },
+      style: {
+        fontFamily: "Inter",
+        fontStyle: "normal",
+        fontSize: 16,
+        color: "#334155",
+        fontWeight: 400,
+        textAlign: "left",
+        backgroundColor: "#ffffff",
+        padding: 12,
+        borderRadius: 6
+      },
+      layout: {
+        width: 300,
+        height: 60
+      }
+    };
+  }
+
   let defaultProps: Record<string, unknown> = {};
 
   switch (type) {
-    case 'Text': defaultProps = { text: "New text" }; break;
     case 'Button': defaultProps = { label: "Button" }; break;
     case 'Input': defaultProps = { placeholder: "Enter value" }; break;
     case 'Card': defaultProps = { title: "Card title", content: "Card content" }; break;
@@ -109,6 +132,46 @@ const BuilderPage = () => {
     setComponents(prev => prev.map(comp => 
       comp.id === componentId ? { ...comp, props: newProps } : comp
     ));
+  };
+
+  const handleUpdateComponentStyle = <K extends keyof BuilderComponentStyle>(
+    componentId: string,
+    key: K,
+    value: BuilderComponentStyle[K]
+  ) => {
+    setComponents(prev =>
+      prev.map(comp =>
+        comp.id === componentId
+          ? {
+              ...comp,
+              style: {
+                ...(comp.style ?? {}),
+                [key]: value
+              }
+            }
+          : comp
+      )
+    );
+  };
+
+  const handleUpdateComponentLayout = <K extends keyof BuilderComponentLayout>(
+    componentId: string,
+    key: K,
+    value: BuilderComponentLayout[K]
+  ) => {
+    setComponents(prev =>
+      prev.map(comp =>
+        comp.id === componentId
+          ? {
+              ...comp,
+              layout: {
+                ...(comp.layout ?? {}),
+                [key]: value
+              }
+            }
+          : comp
+      )
+    );
   };
 
   const handleDeleteComponent = (componentId: string) => {
@@ -282,6 +345,8 @@ const BuilderPage = () => {
           <PropertiesPanel 
             selectedComponent={selectedComponent}
             onUpdateProps={handleUpdateComponent}
+            onUpdateStyle={handleUpdateComponentStyle}
+            onUpdateLayout={handleUpdateComponentLayout}
             onDelete={handleDeleteComponent}
           />
         </div>
