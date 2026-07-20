@@ -7,6 +7,22 @@ export type BuilderTextAlign = "left" | "center" | "right";
 export type BuilderFontFamily = "Inter" | "Roboto" | "Open Sans" | "Montserrat" | "Calibri" | "Arial" | "system-ui";
 export type BuilderFontStyle = "normal" | "italic";
 
+export const BUILDER_INPUT_TYPES = [
+  "text",
+  "email",
+  "password",
+  "number"
+] as const;
+
+export type BuilderInputType = (typeof BUILDER_INPUT_TYPES)[number];
+
+export type BuilderInputProps = {
+  label?: string;
+  placeholder?: string;
+  inputType?: BuilderInputType;
+  required?: boolean;
+};
+
 export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {
   "Inter": '"Inter", system-ui, sans-serif',
   "Roboto": '"Roboto", system-ui, sans-serif',

@@ -69,7 +69,27 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
         borderRadius: 8
       };
       break;
-    case 'Input': defaultProps = { placeholder: "Enter value" }; break;
+    case 'Input':
+      defaultProps = {
+        label: "Label",
+        placeholder: "Enter value",
+        inputType: "text",
+        required: false
+      };
+      defaultStyle = {
+        fontFamily: "Inter",
+        fontStyle: "normal",
+        fontSize: 14,
+        fontWeight: 400,
+        textAlign: "left",
+        color: "#0f172a",
+        backgroundColor: "#ffffff",
+        borderColor: "#cbd5e1",
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 12
+      };
+      break;
     case 'Card': defaultProps = { title: "Card title", content: "Card content" }; break;
     case 'Table': defaultProps = { columns: ["Column 1", "Column 2"] }; break;
   }

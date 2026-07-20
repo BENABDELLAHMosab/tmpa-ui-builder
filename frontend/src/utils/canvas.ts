@@ -5,7 +5,7 @@ export const CANVAS_HEIGHT = 800;
 
 export const DEFAULT_LAYOUTS: Record<BuilderComponentType, { width: number; height: number }> = {
   Text: { width: 300, height: 60 },
-  Input: { width: 360, height: 64 },
+  Input: { width: 320, height: 76 },
   Button: { width: 180, height: 48 },
   Card: { width: 360, height: 160 },
   Table: { width: 600, height: 240 },
@@ -13,7 +13,7 @@ export const DEFAULT_LAYOUTS: Record<BuilderComponentType, { width: number; heig
 
 export const MIN_DIMENSIONS_BY_TYPE: Record<BuilderComponentType, { width: number; height: number }> = {
   Text: { width: 80, height: 32 },
-  Input: { width: 120, height: 40 },
+  Input: { width: 120, height: 60 },
   Button: { width: 80, height: 40 },
   Card: { width: 160, height: 100 },
   Table: { width: 300, height: 160 },

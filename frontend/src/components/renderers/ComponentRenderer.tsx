@@ -80,12 +80,72 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
         </button>
       );
     }
-    case 'Input':
+    case 'Input': {
+      const inputProps = component.props;
+      const inputStyle = component.style;
+
+      const label = (inputProps.label as string) ?? "";
+      const placeholder = (inputProps.placeholder as string) ?? "Enter value";
+      
+      const rawInputType = (inputProps.inputType as string) ?? "text";
+      const validTypes = ["text", "email", "password", "number"];
+      const inputType = validTypes.includes(rawInputType) ? rawInputType : "text";
+
+      const required = (inputProps.required as boolean) ?? false;
+
+      const fontFamilyValue = inputStyle?.fontFamily ?? "Inter";
+      const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue as keyof typeof FONT_FAMILY_FALLBACKS] ?? FONT_FAMILY_FALLBACKS["Inter"];
+
+      const inputId = `builder-input-${component.id}`;
+
       return (
-        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box' }}>
-          <input type="text" placeholder={component.props.placeholder as string} disabled className="canvas-input" style={{ width: '100%' }} />
+        <div 
+          style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            gap: 6, 
+            width: "100%", 
+            height: "100%", 
+            minWidth: 0, 
+            minHeight: 0, 
+            overflow: "hidden", 
+            boxSizing: "border-box" 
+          }}
+        >
+          {label !== "" && (
+            <label htmlFor={inputId} style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>
+              {label}
+              {required && <span aria-hidden="true"> *</span>}
+            </label>
+          )}
+          <input 
+            id={inputId}
+            type={inputType} 
+            placeholder={placeholder} 
+            required={required}
+            style={{ 
+              flex: 1, 
+              width: "100%", 
+              minWidth: 0, 
+              minHeight: 0, 
+              boxSizing: "border-box", 
+              borderStyle: "solid",
+              fontFamily: actualFontFamily,
+              fontStyle: inputStyle?.fontStyle ?? "normal",
+              fontSize: inputStyle?.fontSize ?? 14,
+              fontWeight: inputStyle?.fontWeight ?? 400,
+              textAlign: inputStyle?.textAlign ?? "left",
+              color: inputStyle?.color ?? "#0f172a",
+              backgroundColor: inputStyle?.backgroundColor ?? "#ffffff",
+              borderColor: inputStyle?.borderColor ?? "#cbd5e1",
+              borderWidth: inputStyle?.borderWidth ?? 1,
+              borderRadius: inputStyle?.borderRadius ?? 8,
+              padding: inputStyle?.padding ?? 12
+            }} 
+          />
         </div>
       );
+    }
     case 'Card':
       return (
         <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box' }}>

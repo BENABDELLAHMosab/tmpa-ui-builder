@@ -2,6 +2,7 @@ import type { BuilderComponent, BuilderComponentLayout } from '../../types/page'
 import '../../styles/builder.css';
 import TextProperties from './properties/TextProperties';
 import ButtonProperties from './properties/ButtonProperties';
+import InputProperties from './properties/InputProperties';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
@@ -40,16 +41,7 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
       case 'Button':
         return <ButtonProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Input':
-        return (
-          <div className="prop-group">
-            <label>Placeholder</label>
-            <input 
-              type="text" 
-              value={(selectedComponent.props.placeholder as string) || ''} 
-              onChange={(e) => handlePropChange('placeholder', e.target.value)} 
-            />
-          </div>
-        );
+        return <InputProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Card':
         return (
           <>
