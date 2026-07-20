@@ -9,17 +9,14 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
   switch (component.type) {
     case 'Text': {
       const textStyle = component.style;
-      const textLayout = component.layout;
-      
       const fontFamilyValue = textStyle?.fontFamily ?? "Inter";
       const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue] ?? FONT_FAMILY_FALLBACKS["Inter"];
 
       return (
         <div
           style={{
-            width: textLayout?.width ?? 300,
-            maxWidth: "100%",
-            minHeight: textLayout?.height ?? 60,
+            width: "100%",
+            height: "100%",
             padding: textStyle?.padding ?? 12,
             borderRadius: textStyle?.borderRadius ?? 6,
             backgroundColor: textStyle?.backgroundColor ?? "#ffffff",
@@ -45,20 +42,20 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
     }
     case 'Button':
       return (
-        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)' }}>
-          <button className="btn btn-primary" style={{ width: 'auto' }}>{component.props.label as string}</button>
+        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box' }}>
+          <button className="btn btn-primary" style={{ width: '100%', height: '100%' }}>{component.props.label as string}</button>
         </div>
       );
     case 'Input':
       return (
-        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)' }}>
-          <input type="text" placeholder={component.props.placeholder as string} disabled className="canvas-input" />
+        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box' }}>
+          <input type="text" placeholder={component.props.placeholder as string} disabled className="canvas-input" style={{ width: '100%' }} />
         </div>
       );
     case 'Card':
       return (
-        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)' }}>
-          <div className="canvas-card">
+        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box' }}>
+          <div className="canvas-card" style={{ height: '100%' }}>
             <h4>{component.props.title as string}</h4>
             <p>{component.props.content as string}</p>
           </div>
@@ -66,8 +63,8 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
       );
     case 'Table':
       return (
-        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)' }}>
-          <table className="canvas-table">
+        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box', overflow: 'auto' }}>
+          <table className="canvas-table" style={{ width: '100%' }}>
             <thead>
               <tr>
                 {((component.props.columns as string[]) || []).map((col, idx) => (

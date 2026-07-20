@@ -1,5 +1,6 @@
 import type { BuilderComponent } from '../../types/page';
 import ComponentRenderer from '../renderers/ComponentRenderer';
+import { normalizeComponentsLayout } from '../../utils/canvas';
 import '../../styles/preview.css';
 
 interface PreviewRendererProps {
@@ -17,18 +18,26 @@ const PreviewRenderer = ({ components }: PreviewRendererProps) => {
     );
   }
 
-  const renderComponent = (comp: BuilderComponent) => {
-    return <ComponentRenderer component={comp} />;
-  };
+  const normalizedComponents = normalizeComponentsLayout(components);
 
   return (
-    <div className="preview-components">
-      {components.map((comp) => (
-        <div key={comp.id} className="preview-item">
-          {renderComponent(comp)}
+    <>
+      {normalizedComponents.map((comp) => (
+        <div 
+          key={comp.id} 
+          className="preview-item-wrapper"
+          style={{
+            position: 'absolute',
+            left: comp.layout?.x ?? 0,
+            top: comp.layout?.y ?? 0,
+            width: comp.layout?.width ?? 300,
+            height: comp.layout?.height ?? 60,
+          }}
+        >
+          <ComponentRenderer component={comp} />
         </div>
       ))}
-    </div>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pageService } from '../services/page.service';
 import type { UiPage, BuilderComponent, BuilderComponentType, BuilderComponentStyle, BuilderComponentLayout } from '../types/page';
@@ -17,11 +17,18 @@ import {
   DragOverlay
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
+import { clamp, normalizeComponentsLayout, DEFAULT_LAYOUTS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/canvas';
 import { createPortal } from 'react-dom';
 
-const createBuilderComponent = (type: BuilderComponentType): BuilderComponent => {
+const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number): BuilderComponent => {
   const newId = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  const defaultLayout = DEFAULT_LAYOUTS[type] ?? { width: 300, height: 60 };
+  const layout = {
+    x: initialX ?? 24,
+    y: initialY ?? 24,
+    width: defaultLayout.width,
+    height: defaultLayout.height
+  };
   
   if (type === 'Text') {
     return {
@@ -39,10 +46,7 @@ const createBuilderComponent = (type: BuilderComponentType): BuilderComponent =>
         padding: 12,
         borderRadius: 6
       },
-      layout: {
-        width: 300,
-        height: 60
-      }
+      layout
     };
   }
 
@@ -58,13 +62,15 @@ const createBuilderComponent = (type: BuilderComponentType): BuilderComponent =>
   return {
     id: newId,
     type,
-    props: defaultProps
+    props: defaultProps,
+    layout
   };
 };
 
 const BuilderPage = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
+  const canvasRef = useRef<HTMLDivElement>(null);
   
   const [page, setPage] = useState<UiPage | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -84,9 +90,7 @@ const BuilderPage = () => {
         distance: 5,
       },
     }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(KeyboardSensor)
   );
 
   useEffect(() => {
@@ -102,7 +106,7 @@ const BuilderPage = () => {
         const data = await pageService.getPageById(pageId);
         setPage(data);
         if (data.schema && Array.isArray(data.schema.components)) {
-          setComponents(data.schema.components as BuilderComponent[]);
+          setComponents(normalizeComponentsLayout(data.schema.components as BuilderComponent[]));
         }
       } catch (err: any) {
         setError(err.message || "Failed to load page");
@@ -160,17 +164,23 @@ const BuilderPage = () => {
     value: BuilderComponentLayout[K]
   ) => {
     setComponents(prev =>
-      prev.map(comp =>
-        comp.id === componentId
-          ? {
-              ...comp,
-              layout: {
-                ...(comp.layout ?? {}),
-                [key]: value
-              }
-            }
-          : comp
-      )
+      prev.map(comp => {
+        if (comp.id !== componentId) return comp;
+        
+        let safeValue = value;
+        if (typeof value === 'number') {
+          if (key === 'x') safeValue = clamp(value, 0, CANVAS_WIDTH - (comp.layout?.width ?? 0)) as any;
+          else if (key === 'y') safeValue = clamp(value, 0, CANVAS_HEIGHT - (comp.layout?.height ?? 0)) as any;
+        }
+        
+        return {
+          ...comp,
+          layout: {
+            ...(comp.layout ?? {}),
+            [key]: safeValue
+          }
+        };
+      })
     );
   };
 
@@ -248,7 +258,27 @@ const BuilderPage = () => {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveSidebarType(null);
-    const { active, over } = event;
+    const { active, over, delta } = event;
+
+    const isCanvasItem = active.data.current?.source === 'canvas';
+    if (isCanvasItem) {
+      setComponents(prev => prev.map(comp => {
+        if (comp.id === active.id) {
+          const newX = clamp((comp.layout?.x ?? 0) + delta.x, 0, CANVAS_WIDTH - (comp.layout?.width ?? 0));
+          const newY = clamp((comp.layout?.y ?? 0) + delta.y, 0, CANVAS_HEIGHT - (comp.layout?.height ?? 0));
+          return {
+            ...comp,
+            layout: {
+              ...comp.layout,
+              x: newX,
+              y: newY
+            }
+          };
+        }
+        return comp;
+      }));
+      return;
+    }
 
     if (!over) {
       return;
@@ -257,28 +287,28 @@ const BuilderPage = () => {
     const isDroppedOnCanvas = over.id === 'builder-canvas' || over.data.current?.source === 'canvas';
     const isSidebarItem = active.data.current?.source === 'sidebar';
 
-    if (isSidebarItem && isDroppedOnCanvas) {
+    if (isSidebarItem && isDroppedOnCanvas && canvasRef.current) {
       const type = active.data.current?.componentType;
       if (isValidComponentType(type)) {
-        const newComponent = createBuilderComponent(type);
+        const canvasRect = canvasRef.current.getBoundingClientRect();
+        
+        let initialX = 24;
+        let initialY = 24;
+        
+        if (active.rect.current.translated) {
+          initialX = active.rect.current.translated.left - canvasRect.left;
+          initialY = active.rect.current.translated.top - canvasRect.top;
+        }
+
+        const defaultLayout = DEFAULT_LAYOUTS[type] ?? { width: 300, height: 60 };
+        initialX = clamp(initialX, 0, CANVAS_WIDTH - defaultLayout.width);
+        initialY = clamp(initialY, 0, CANVAS_HEIGHT - defaultLayout.height);
+
+        const newComponent = createBuilderComponent(type, initialX, initialY);
         setComponents(prev => [...prev, newComponent]);
         setSelectedComponentId(newComponent.id);
       }
       return;
-    }
-
-    const isCanvasItem = active.data.current?.source === 'canvas';
-    if (isCanvasItem && active.id !== over.id) {
-      setComponents(prev => {
-        const oldIndex = prev.findIndex(comp => comp.id === active.id);
-        const newIndex = prev.findIndex(comp => comp.id === over.id);
-
-        if (oldIndex === -1 || newIndex === -1) {
-          return prev;
-        }
-
-        return arrayMove(prev, oldIndex, newIndex);
-      });
     }
   };
 
@@ -340,6 +370,7 @@ const BuilderPage = () => {
             components={components} 
             selectedComponentId={selectedComponentId} 
             onSelectComponent={handleSelectComponent}
+            canvasRef={canvasRef}
           />
           
           <PropertiesPanel 

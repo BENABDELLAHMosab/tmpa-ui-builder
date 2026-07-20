@@ -30,6 +30,8 @@ export interface BuilderComponentStyle {
 }
 
 export interface BuilderComponentLayout {
+  x?: number;
+  y?: number;
   width?: number;
   height?: number;
 }

@@ -149,31 +149,6 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
                 }} 
               />
             </div>
-
-            <div className="prop-group">
-              <label style={{ fontWeight: 600, marginTop: '10px', display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Dimensions</label>
-              <label>Width (px)</label>
-              <input 
-                type="number" 
-                min={50} max={1200}
-                value={selectedComponent.layout?.width ?? 300} 
-                onChange={(e) => {
-                  const val = e.currentTarget.valueAsNumber;
-                  if (!Number.isNaN(val)) handleLayoutChange('width', val);
-                }} 
-              />
-              
-              <label>Min Height (px)</label>
-              <input 
-                type="number" 
-                min={20} max={1000}
-                value={selectedComponent.layout?.height ?? 60} 
-                onChange={(e) => {
-                  const val = e.currentTarget.valueAsNumber;
-                  if (!Number.isNaN(val)) handleLayoutChange('height', val);
-                }} 
-              />
-            </div>
           </>
         );
       case 'Button':
@@ -247,6 +222,56 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
       
       <div className="properties-content">
         <div className="properties-form">
+          <div className="prop-group">
+            <label style={{ fontWeight: 600, marginTop: '10px', display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Position</label>
+            <label>X (px)</label>
+            <input 
+              type="number" 
+              min={0} max={1200}
+              value={selectedComponent.layout?.x ?? 0} 
+              onChange={(e) => {
+                const val = e.currentTarget.valueAsNumber;
+                if (!Number.isNaN(val)) handleLayoutChange('x', val);
+              }} 
+            />
+            
+            <label>Y (px)</label>
+            <input 
+              type="number" 
+              min={0} max={800}
+              value={selectedComponent.layout?.y ?? 0} 
+              onChange={(e) => {
+                const val = e.currentTarget.valueAsNumber;
+                if (!Number.isNaN(val)) handleLayoutChange('y', val);
+              }} 
+            />
+          </div>
+
+          <div className="prop-group">
+            <label style={{ fontWeight: 600, marginTop: '10px', display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>Dimensions</label>
+            <label>Width (px)</label>
+            <input 
+              type="number" 
+              min={50} max={1200}
+              value={selectedComponent.layout?.width ?? 300} 
+              onChange={(e) => {
+                const val = e.currentTarget.valueAsNumber;
+                if (!Number.isNaN(val)) handleLayoutChange('width', val);
+              }} 
+            />
+            
+            <label>Height (px)</label>
+            <input 
+              type="number" 
+              min={20} max={1000}
+              value={selectedComponent.layout?.height ?? 60} 
+              onChange={(e) => {
+                const val = e.currentTarget.valueAsNumber;
+                if (!Number.isNaN(val)) handleLayoutChange('height', val);
+              }} 
+            />
+          </div>
+
           {renderProps()}
         </div>
       </div>

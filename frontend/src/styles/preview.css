@@ -81,20 +81,23 @@
 
 .preview-main {
   flex: 1;
-  overflow-y: auto;
-  display: flex;
-  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
   padding: 3rem 2rem;
 }
 
 .preview-container {
-  width: 100%;
-  max-width: 1100px;
+  position: relative;
+  width: 1200px;
+  height: 800px;
+  min-width: 1200px;
+  flex: 0 0 auto;
+  margin: 0 auto;
   background-color: var(--surface-primary);
   border-radius: var(--radius-large);
   box-shadow: var(--shadow-card);
-  padding: 3rem;
-  min-height: 600px;
+  overflow: hidden;
 }
 
 .preview-empty {
