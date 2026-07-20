@@ -115,7 +115,9 @@ const DraggableCanvasItem = ({ comp, isSelected, onSelectComponent, onResizeComp
         onSelectComponent(comp.id);
       }}
     >
-      <ComponentRenderer component={comp} />
+      <div className="canvas-item__content" style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
+        <ComponentRenderer component={comp} />
+      </div>
       {isSelected && (
         <div
           className="resize-handle resize-handle-se"

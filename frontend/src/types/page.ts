@@ -27,6 +27,8 @@ export interface BuilderComponentStyle {
   backgroundColor?: string;
   padding?: number;
   borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
 }
 
 export interface BuilderComponentLayout {

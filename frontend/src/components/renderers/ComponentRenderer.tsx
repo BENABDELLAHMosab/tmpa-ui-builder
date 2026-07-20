@@ -40,12 +40,46 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
         </div>
       );
     }
-    case 'Button':
+    case 'Button': {
+      const btnStyle = component.style;
+      const fontFamilyValue = btnStyle?.fontFamily ?? "Inter";
+      const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue] ?? FONT_FAMILY_FALLBACKS["Inter"];
+      
+      const textAlign = btnStyle?.textAlign ?? "center";
+      let justifyContent = "center";
+      if (textAlign === "left") justifyContent = "flex-start";
+      if (textAlign === "right") justifyContent = "flex-end";
+
       return (
-        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box' }}>
-          <button className="btn btn-primary" style={{ width: '100%', height: '100%' }}>{component.props.label as string}</button>
-        </div>
+        <button
+          type="button"
+          style={{
+            width: "100%",
+            height: "100%",
+            boxSizing: "border-box",
+            appearance: "none",
+            borderStyle: "solid",
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent,
+            fontFamily: actualFontFamily,
+            fontStyle: btnStyle?.fontStyle ?? "normal",
+            fontSize: btnStyle?.fontSize ?? 14,
+            fontWeight: btnStyle?.fontWeight ?? 600,
+            color: btnStyle?.color ?? "#ffffff",
+            backgroundColor: btnStyle?.backgroundColor ?? "#1e3a66",
+            borderColor: btnStyle?.borderColor ?? "#1e3a66",
+            borderWidth: btnStyle?.borderWidth ?? 1,
+            borderRadius: btnStyle?.borderRadius ?? 8,
+            textAlign, // Keep textAlign for multi-line text alignment
+            cursor: "pointer"
+          }}
+        >
+          {(component.props.label as string) ?? "Button"}
+        </button>
       );
+    }
     case 'Input':
       return (
         <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box' }}>

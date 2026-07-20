@@ -51,9 +51,24 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
   }
 
   let defaultProps: Record<string, unknown> = {};
+  let defaultStyle: BuilderComponentStyle | undefined = undefined;
 
   switch (type) {
-    case 'Button': defaultProps = { label: "Button" }; break;
+    case 'Button': 
+      defaultProps = { label: "Button" }; 
+      defaultStyle = {
+        fontFamily: "Inter",
+        fontStyle: "normal",
+        fontSize: 14,
+        fontWeight: 600,
+        textAlign: "center",
+        color: "#ffffff",
+        backgroundColor: "#1e3a66",
+        borderColor: "#1e3a66",
+        borderWidth: 1,
+        borderRadius: 8
+      };
+      break;
     case 'Input': defaultProps = { placeholder: "Enter value" }; break;
     case 'Card': defaultProps = { title: "Card title", content: "Card content" }; break;
     case 'Table': defaultProps = { columns: ["Column 1", "Column 2"] }; break;
@@ -63,6 +78,7 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
     id: newId,
     type,
     props: defaultProps,
+    ...(defaultStyle ? { style: defaultStyle } : {}),
     layout
   };
 };
