@@ -3,6 +3,7 @@ import '../../styles/builder.css';
 import TextProperties from './properties/TextProperties';
 import ButtonProperties from './properties/ButtonProperties';
 import InputProperties from './properties/InputProperties';
+import CardProperties from './properties/CardProperties';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
@@ -43,25 +44,7 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
       case 'Input':
         return <InputProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Card':
-        return (
-          <>
-            <div className="prop-group">
-              <label>Title</label>
-              <input 
-                type="text" 
-                value={(selectedComponent.props.title as string) || ''} 
-                onChange={(e) => handlePropChange('title', e.target.value)} 
-              />
-            </div>
-            <div className="prop-group">
-              <label>Content</label>
-              <textarea 
-                value={(selectedComponent.props.content as string) || ''} 
-                onChange={(e) => handlePropChange('content', e.target.value)} 
-              />
-            </div>
-          </>
-        );
+        return <CardProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Table':
         return (
           <div className="prop-group">

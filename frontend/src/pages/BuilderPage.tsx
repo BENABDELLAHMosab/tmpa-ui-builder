@@ -90,7 +90,22 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
         padding: 12
       };
       break;
-    case 'Card': defaultProps = { title: "Card title", content: "Card content" }; break;
+    case 'Card':
+      defaultProps = { title: "Card title", content: "Card content" };
+      defaultStyle = {
+        fontFamily: "Inter",
+        fontStyle: "normal",
+        fontSize: 14,
+        fontWeight: 400,
+        textAlign: "left",
+        color: "#334155",
+        backgroundColor: "#ffffff",
+        borderColor: "#dbe3ef",
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 20
+      };
+      break;
     case 'Table': defaultProps = { columns: ["Column 1", "Column 2"] }; break;
   }
 

@@ -23,6 +23,11 @@ export type BuilderInputProps = {
   required?: boolean;
 };
 
+export type BuilderCardProps = {
+  title?: string;
+  content?: string;
+};
+
 export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {
   "Inter": '"Inter", system-ui, sans-serif',
   "Roboto": '"Roboto", system-ui, sans-serif',
