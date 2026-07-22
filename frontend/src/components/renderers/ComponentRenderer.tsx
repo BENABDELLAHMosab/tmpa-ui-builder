@@ -356,6 +356,94 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
         </div>
       );
     }
+    case 'Select': {
+      const selectStyle = component.style;
+      const fontFamilyValue = selectStyle?.fontFamily ?? "Inter";
+      const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue as keyof typeof FONT_FAMILY_FALLBACKS] ?? FONT_FAMILY_FALLBACKS["Inter"];
+
+      const label = typeof component.props.label === 'string' ? component.props.label : "";
+      const placeholder = typeof component.props.placeholder === 'string' ? component.props.placeholder : "";
+      const required = typeof component.props.required === 'boolean' ? component.props.required : false;
+      const rawOptions = component.props.options;
+      const options = Array.isArray(rawOptions) ? rawOptions : [];
+
+      const selectId = `builder-select-${component.id}`;
+
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            minWidth: 0,
+            minHeight: 0,
+            overflow: "hidden",
+            boxSizing: "border-box"
+          }}
+        >
+          {label !== "" && (
+            <label
+              htmlFor={selectId}
+              style={{
+                fontFamily: actualFontFamily,
+                fontSize: 14,
+                fontWeight: 500,
+                color: "#0f172a",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              }}
+            >
+              {label}
+              {required && <span aria-hidden="true" style={{ color: "#ef4444" }}> *</span>}
+            </label>
+          )}
+          <select
+            id={selectId}
+            required={required}
+            defaultValue={placeholder !== "" ? "" : undefined}
+            style={{
+              flex: 1,
+              width: "100%",
+              minWidth: 0,
+              minHeight: 0,
+              boxSizing: "border-box",
+              fontFamily: actualFontFamily,
+              fontStyle: selectStyle?.fontStyle ?? "normal",
+              fontSize: selectStyle?.fontSize ?? 14,
+              fontWeight: selectStyle?.fontWeight ?? 400,
+              textAlign: selectStyle?.textAlign ?? "left",
+              color: selectStyle?.color ?? "#0f172a",
+              backgroundColor: selectStyle?.backgroundColor ?? "#ffffff",
+              borderColor: selectStyle?.borderColor ?? "#cbd5e1",
+              borderWidth: selectStyle?.borderWidth ?? 1,
+              borderStyle: "solid",
+              borderRadius: selectStyle?.borderRadius ?? 8,
+              padding: selectStyle?.padding ?? 12,
+            }}
+          >
+            {placeholder !== "" && (
+              <option value="" disabled>
+                {placeholder}
+              </option>
+            )}
+            {options.map((opt: any) => {
+              const optId = opt && typeof opt.id === 'string' ? opt.id : `fallback-${Math.random()}`;
+              const optLabel = opt && typeof opt.label === 'string' ? opt.label : "";
+              const optValue = opt && typeof opt.value === 'string' ? opt.value : "";
+              
+              return (
+                <option key={optId} value={optValue}>
+                  {optLabel}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      );
+    }
     default:
       return null;
   }

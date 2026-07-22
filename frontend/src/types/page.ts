@@ -1,6 +1,6 @@
 export type PageStatus = "draft" | "submitted" | "approved" | "rejected" | "published";
 
-export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table";
+export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select";
 
 export type BuilderFontWeight = 400 | 500 | 600 | 700;
 export type BuilderTextAlign = "left" | "center" | "right";
@@ -41,6 +41,19 @@ export type BuilderTableRow = {
 export type BuilderTableProps = {
   columns?: BuilderTableColumn[];
   rows?: BuilderTableRow[];
+};
+
+export type BuilderSelectOption = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+export type BuilderSelectProps = {
+  label?: string;
+  placeholder?: string;
+  required?: boolean;
+  options?: BuilderSelectOption[];
 };
 
 export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {

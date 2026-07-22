@@ -6,6 +6,7 @@ import ButtonProperties from './properties/ButtonProperties';
 import InputProperties from './properties/InputProperties';
 import CardProperties from './properties/CardProperties';
 import TableProperties from './properties/TableProperties';
+import SelectProperties from './properties/SelectProperties';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
@@ -20,8 +21,11 @@ interface PropertiesPanelProps {
 const PropertiesPanel = ({ selectedComponent, layerInfo, onUpdateProps, onUpdateStyle, onUpdateLayout, onMoveLayer, onDelete }: PropertiesPanelProps) => {
   if (!selectedComponent) {
     return (
-      <div className="properties-panel empty">
-        <p>Select a component to edit its properties.</p>
+      <div className="properties-panel">
+        <h3 style={{ padding: '0 1rem' }}>Properties</h3>
+        <div className="properties-empty">
+          Select a component to edit its properties
+        </div>
       </div>
     );
   }
@@ -44,8 +48,10 @@ const PropertiesPanel = ({ selectedComponent, layerInfo, onUpdateProps, onUpdate
         return <CardProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Table':
         return <TableProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
+      case 'Select':
+        return <SelectProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       default:
-        return null;
+        return <div style={{ padding: '16px', color: '#64748b' }}>No properties available for this component type.</div>;
     }
   };
 

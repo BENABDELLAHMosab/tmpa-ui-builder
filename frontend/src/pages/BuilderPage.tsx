@@ -22,6 +22,7 @@ import { generateId } from '../utils/id';
 import { TABLE_STYLE_DEFAULTS } from '../utils/table';
 import { getHighestZIndex, getComponentLayerInfo, moveComponentLayer, normalizeComponentLayers } from '../utils/layers';
 import type { LayerAction } from '../utils/layers';
+import { SELECT_STYLE_DEFAULTS } from '../utils/select';
 import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number, initialZIndex?: number): BuilderComponent => {
@@ -135,6 +136,29 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
         ]
       };
       defaultStyle = { ...TABLE_STYLE_DEFAULTS };
+      break;
+    }
+    case 'Select': {
+      const options = [
+        {
+          id: generateId("option"),
+          label: "Option 1",
+          value: "option-1"
+        },
+        {
+          id: generateId("option"),
+          label: "Option 2",
+          value: "option-2"
+        }
+      ];
+
+      defaultProps = {
+        label: "Status",
+        placeholder: "Choose an option",
+        required: false,
+        options
+      };
+      defaultStyle = { ...SELECT_STYLE_DEFAULTS };
       break;
     }
   }
