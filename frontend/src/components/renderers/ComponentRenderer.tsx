@@ -1,6 +1,7 @@
 import type { BuilderComponent } from '../../types/page';
 import { FONT_FAMILY_FALLBACKS } from '../../types/page';
 import { TABLE_STYLE_DEFAULTS } from '../../utils/table';
+import { SELECT_STYLE_DEFAULTS } from '../../utils/select';
 
 interface ComponentRendererProps {
   component: BuilderComponent;
@@ -357,8 +358,8 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
       );
     }
     case 'Select': {
-      const selectStyle = component.style;
-      const fontFamilyValue = selectStyle?.fontFamily ?? "Inter";
+      const selectStyle = component.style || {};
+      const fontFamilyValue = selectStyle.fontFamily ?? SELECT_STYLE_DEFAULTS.fontFamily;
       const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue as keyof typeof FONT_FAMILY_FALLBACKS] ?? FONT_FAMILY_FALLBACKS["Inter"];
 
       const label = typeof component.props.label === 'string' ? component.props.label : "";
@@ -411,17 +412,17 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
               minHeight: 0,
               boxSizing: "border-box",
               fontFamily: actualFontFamily,
-              fontStyle: selectStyle?.fontStyle ?? "normal",
-              fontSize: selectStyle?.fontSize ?? 14,
-              fontWeight: selectStyle?.fontWeight ?? 400,
-              textAlign: selectStyle?.textAlign ?? "left",
-              color: selectStyle?.color ?? "#0f172a",
-              backgroundColor: selectStyle?.backgroundColor ?? "#ffffff",
-              borderColor: selectStyle?.borderColor ?? "#cbd5e1",
-              borderWidth: selectStyle?.borderWidth ?? 1,
+              fontStyle: selectStyle.fontStyle ?? SELECT_STYLE_DEFAULTS.fontStyle,
+              fontSize: selectStyle.fontSize ?? SELECT_STYLE_DEFAULTS.fontSize,
+              fontWeight: selectStyle.fontWeight ?? SELECT_STYLE_DEFAULTS.fontWeight,
+              textAlign: (selectStyle.textAlign ?? SELECT_STYLE_DEFAULTS.textAlign) as any,
+              color: selectStyle.color ?? SELECT_STYLE_DEFAULTS.color,
+              backgroundColor: selectStyle.backgroundColor ?? SELECT_STYLE_DEFAULTS.backgroundColor,
+              borderColor: selectStyle.borderColor ?? SELECT_STYLE_DEFAULTS.borderColor,
+              borderWidth: selectStyle.borderWidth ?? SELECT_STYLE_DEFAULTS.borderWidth,
               borderStyle: "solid",
-              borderRadius: selectStyle?.borderRadius ?? 8,
-              padding: selectStyle?.padding ?? 12,
+              borderRadius: selectStyle.borderRadius ?? SELECT_STYLE_DEFAULTS.borderRadius,
+              padding: selectStyle.padding ?? SELECT_STYLE_DEFAULTS.padding,
             }}
           >
             {placeholder !== "" && (
@@ -429,8 +430,8 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
                 {placeholder}
               </option>
             )}
-            {options.map((opt: any) => {
-              const optId = opt && typeof opt.id === 'string' ? opt.id : `fallback-${Math.random()}`;
+            {options.map((opt: any, index: number) => {
+              const optId = opt && typeof opt.id === 'string' ? opt.id : `${component.id}-option-${index}`;
               const optLabel = opt && typeof opt.label === 'string' ? opt.label : "";
               const optValue = opt && typeof opt.value === 'string' ? opt.value : "";
               
