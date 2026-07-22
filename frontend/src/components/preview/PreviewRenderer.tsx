@@ -1,6 +1,7 @@
 import type { BuilderComponent } from '../../types/page';
 import ComponentRenderer from '../renderers/ComponentRenderer';
 import { normalizeComponentsLayout } from '../../utils/canvas';
+import { normalizeComponentLayers } from '../../utils/layers';
 import '../../styles/preview.css';
 
 interface PreviewRendererProps {
@@ -18,7 +19,7 @@ const PreviewRenderer = ({ components }: PreviewRendererProps) => {
     );
   }
 
-  const normalizedComponents = normalizeComponentsLayout(components);
+  const normalizedComponents = normalizeComponentLayers(normalizeComponentsLayout(components));
 
   return (
     <>
@@ -32,6 +33,7 @@ const PreviewRenderer = ({ components }: PreviewRendererProps) => {
             top: comp.layout?.y ?? 0,
             width: comp.layout?.width ?? 300,
             height: comp.layout?.height ?? 60,
+            zIndex: comp.layout?.zIndex ?? 1,
             overflow: 'hidden',
             boxSizing: 'border-box',
           }}

@@ -74,6 +74,7 @@ export interface BuilderComponentLayout {
   y?: number;
   width?: number;
   height?: number;
+  zIndex?: number;
 }
 
 export interface BuilderComponent {

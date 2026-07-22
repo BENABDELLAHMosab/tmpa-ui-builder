@@ -4,11 +4,13 @@ import { CSS } from '@dnd-kit/utilities';
 import type { BuilderComponent } from '../../types/page';
 import ComponentRenderer from '../renderers/ComponentRenderer';
 import { clamp, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../../utils/canvas';
+import { getHighestZIndex } from '../../utils/layers';
 import '../../styles/builder.css';
 
 interface DraggableCanvasItemProps {
   comp: BuilderComponent;
   isSelected: boolean;
+  interactionZIndex: number;
   onSelectComponent: (componentId: string) => void;
   onResizeComponent: (componentId: string, dimensions: { width: number; height: number }) => void;
 }
@@ -21,7 +23,7 @@ type ResizeSession = {
   height: number;
 };
 
-const DraggableCanvasItem = ({ comp, isSelected, onSelectComponent, onResizeComponent }: DraggableCanvasItemProps) => {
+const DraggableCanvasItem = ({ comp, isSelected, interactionZIndex, onSelectComponent, onResizeComponent }: DraggableCanvasItemProps) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
 
@@ -84,6 +86,8 @@ const DraggableCanvasItem = ({ comp, isSelected, onSelectComponent, onResizeComp
     resizeSessionRef.current = null;
   };
 
+  const displayedZIndex = isDragging || isResizing ? interactionZIndex : (comp.layout?.zIndex ?? 1);
+
   const style: React.CSSProperties = {
     position: 'absolute',
     left: comp.layout?.x ?? 0,
@@ -91,7 +95,7 @@ const DraggableCanvasItem = ({ comp, isSelected, onSelectComponent, onResizeComp
     width: comp.layout?.width ?? 300,
     height: comp.layout?.height ?? 60,
     transform: CSS.Translate.toString(transform),
-    zIndex: isResizing ? 1100 : (isDragging ? 1000 : 1),
+    zIndex: displayedZIndex,
     padding: 0,
     border: isSelected ? '2px solid var(--color-secondary)' : '2px solid transparent',
     boxShadow: isSelected ? '0 0 0 4px var(--color-info-bg)' : '0 1px 3px rgba(0, 0, 0, 0.05)',
@@ -144,6 +148,7 @@ interface BuilderCanvasProps {
 
 const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onResizeComponent, canvasRef }: BuilderCanvasProps) => {
   const hasComponents = components.length > 0;
+  const interactionZIndex = getHighestZIndex(components) + 1;
   
   const { isOver, setNodeRef } = useDroppable({
     id: 'builder-canvas',
@@ -183,6 +188,7 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
               key={comp.id}
               comp={comp}
               isSelected={comp.id === selectedComponentId}
+              interactionZIndex={interactionZIndex}
               onSelectComponent={onSelectComponent}
               onResizeComponent={onResizeComponent}
             />

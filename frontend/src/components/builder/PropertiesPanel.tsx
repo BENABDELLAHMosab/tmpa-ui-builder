@@ -1,4 +1,5 @@
 import type { BuilderComponent, BuilderComponentLayout } from '../../types/page';
+import type { ComponentLayerInfo, LayerAction } from '../../utils/layers';
 import '../../styles/builder.css';
 import TextProperties from './properties/TextProperties';
 import ButtonProperties from './properties/ButtonProperties';
@@ -8,13 +9,15 @@ import TableProperties from './properties/TableProperties';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
+  layerInfo?: ComponentLayerInfo | null;
   onUpdateProps: (componentId: string, newProps: Record<string, unknown>) => void;
   onUpdateStyle?: (componentId: string, key: any, value: any) => void;
   onUpdateLayout?: <K extends keyof BuilderComponentLayout>(componentId: string, key: K, value: BuilderComponentLayout[K]) => void;
+  onMoveLayer?: (componentId: string, action: LayerAction) => void;
   onDelete: (componentId: string) => void;
 }
 
-const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUpdateLayout, onDelete }: PropertiesPanelProps) => {
+const PropertiesPanel = ({ selectedComponent, layerInfo, onUpdateProps, onUpdateStyle, onUpdateLayout, onMoveLayer, onDelete }: PropertiesPanelProps) => {
   if (!selectedComponent) {
     return (
       <div className="properties-panel empty">
@@ -106,21 +109,78 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
           </div>
 
           {renderProps()}
-        </div>
-      </div>
 
-      <div className="properties-footer">
-        <button 
-          className="btn btn-danger" 
-          onClick={() => onDelete(selectedComponent.id)}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-            <path d="M3 6h18"></path>
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          </svg>
-          Delete component
-        </button>
+          {/* LAYER SECTION */}
+          {layerInfo && onMoveLayer && (
+            <div className="prop-group" style={{ marginTop: '24px' }}>
+              <label style={{ fontWeight: 600, display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>
+                Layer
+              </label>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                Layer {layerInfo.level} of {layerInfo.total}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    type="button"
+                    className="btn" 
+                    style={{ flex: 1, padding: '4px' }}
+                    onClick={() => onMoveLayer(selectedComponent.id, "bring-forward")}
+                    disabled={layerInfo.isMax}
+                  >
+                    Bring forward
+                  </button>
+                  <button 
+                    type="button"
+                    className="btn" 
+                    style={{ flex: 1, padding: '4px' }}
+                    onClick={() => onMoveLayer(selectedComponent.id, "bring-to-front")}
+                    disabled={layerInfo.isMax}
+                  >
+                    Bring to front
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    type="button"
+                    className="btn" 
+                    style={{ flex: 1, padding: '4px' }}
+                    onClick={() => onMoveLayer(selectedComponent.id, "send-backward")}
+                    disabled={layerInfo.isMin}
+                  >
+                    Send backward
+                  </button>
+                  <button 
+                    type="button"
+                    className="btn" 
+                    style={{ flex: 1, padding: '4px' }}
+                    onClick={() => onMoveLayer(selectedComponent.id, "send-to-back")}
+                    disabled={layerInfo.isMin}
+                  >
+                    Send to back
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DELETE SECTION */}
+          <div className="prop-group" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #fee2e2' }}>
+            <button 
+              type="button"
+              className="btn" 
+              onClick={() => onDelete(selectedComponent.id)}
+              style={{ 
+                width: '100%', 
+                backgroundColor: '#fee2e2', 
+                color: '#ef4444', 
+                borderColor: '#fca5a5' 
+              }}
+            >
+              Delete Component
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

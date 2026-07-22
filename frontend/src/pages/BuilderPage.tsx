@@ -20,16 +20,19 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { clamp, normalizeComponentsLayout, DEFAULT_LAYOUTS, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../utils/canvas';
 import { generateId } from '../utils/id';
 import { TABLE_STYLE_DEFAULTS } from '../utils/table';
+import { getHighestZIndex, getComponentLayerInfo, moveComponentLayer, normalizeComponentLayers } from '../utils/layers';
+import type { LayerAction } from '../utils/layers';
 import { createPortal } from 'react-dom';
 
-const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number): BuilderComponent => {
+const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number, initialZIndex?: number): BuilderComponent => {
   const newId = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   const defaultLayout = DEFAULT_LAYOUTS[type] ?? { width: 300, height: 60 };
   const layout = {
     x: initialX ?? 24,
     y: initialY ?? 24,
     width: defaultLayout.width,
-    height: defaultLayout.height
+    height: defaultLayout.height,
+    ...(initialZIndex !== undefined ? { zIndex: initialZIndex } : {})
   };
   
   if (type === 'Text') {
@@ -184,7 +187,7 @@ const BuilderPage = () => {
         const data = await pageService.getPageById(pageId);
         setPage(data);
         if (data.schema && Array.isArray(data.schema.components)) {
-          setComponents(normalizeComponentsLayout(data.schema.components as BuilderComponent[]));
+          setComponents(normalizeComponentLayers(normalizeComponentsLayout(data.schema.components as BuilderComponent[])));
         }
       } catch (err: any) {
         setError(err.message || "Failed to load page");
@@ -202,7 +205,11 @@ const BuilderPage = () => {
 
   const handleAddComponent = (type: BuilderComponentType) => {
     const newComponent = createBuilderComponent(type);
-    setComponents(prev => [...prev, newComponent]);
+    setComponents(prev => {
+      const nextZIndex = getHighestZIndex(prev) + 1;
+      newComponent.layout = { ...newComponent.layout, zIndex: nextZIndex };
+      return [...prev, newComponent];
+    });
     setSelectedComponentId(newComponent.id);
   };
 
@@ -284,10 +291,17 @@ const BuilderPage = () => {
 
 
   const handleDeleteComponent = (componentId: string) => {
-    setComponents(prev => prev.filter(comp => comp.id !== componentId));
+    setComponents(prev => {
+      const filtered = prev.filter(comp => comp.id !== componentId);
+      return normalizeComponentLayers(filtered);
+    });
     if (selectedComponentId === componentId) {
       setSelectedComponentId(null);
     }
+  };
+
+  const handleMoveLayer = (componentId: string, action: LayerAction) => {
+    setComponents(prev => moveComponentLayer(prev, componentId, action));
   };
 
   const handleSave = async () => {
@@ -408,7 +422,11 @@ const BuilderPage = () => {
         initialY = clamp(initialY, 0, CANVAS_HEIGHT - defaultLayout.height);
 
         const newComponent = createBuilderComponent(type, initialX, initialY);
-        setComponents(prev => [...prev, newComponent]);
+        setComponents(prev => {
+          const nextZIndex = getHighestZIndex(prev) + 1;
+          newComponent.layout = { ...newComponent.layout, zIndex: nextZIndex };
+          return [...prev, newComponent];
+        });
         setSelectedComponentId(newComponent.id);
       }
       return;
@@ -432,6 +450,7 @@ const BuilderPage = () => {
   }
 
   const selectedComponent = components.find(c => c.id === selectedComponentId) || null;
+  const selectedLayerInfo = selectedComponentId ? getComponentLayerInfo(components, selectedComponentId) : null;
 
   return (
     <DndContext
@@ -479,9 +498,11 @@ const BuilderPage = () => {
           
           <PropertiesPanel 
             selectedComponent={selectedComponent}
+            layerInfo={selectedLayerInfo}
             onUpdateProps={handleUpdateComponent}
             onUpdateStyle={handleUpdateComponentStyle}
             onUpdateLayout={handleUpdateComponentLayout}
+            onMoveLayer={handleMoveLayer}
             onDelete={handleDeleteComponent}
           />
         </div>
