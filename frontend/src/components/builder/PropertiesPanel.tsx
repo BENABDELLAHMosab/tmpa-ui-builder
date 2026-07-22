@@ -1,5 +1,4 @@
 import type { BuilderComponent, BuilderComponentLayout } from '../../types/page';
-import type { ComponentLayerInfo, LayerAction } from '../../utils/layers';
 import '../../styles/builder.css';
 import TextProperties from './properties/TextProperties';
 import ButtonProperties from './properties/ButtonProperties';
@@ -10,15 +9,13 @@ import SelectProperties from './properties/SelectProperties';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
-  layerInfo?: ComponentLayerInfo | null;
   onUpdateProps: (componentId: string, newProps: Record<string, unknown>) => void;
   onUpdateStyle?: (componentId: string, key: any, value: any) => void;
   onUpdateLayout?: <K extends keyof BuilderComponentLayout>(componentId: string, key: K, value: BuilderComponentLayout[K]) => void;
-  onMoveLayer?: (componentId: string, action: LayerAction) => void;
   onDelete: (componentId: string) => void;
 }
 
-const PropertiesPanel = ({ selectedComponent, layerInfo, onUpdateProps, onUpdateStyle, onUpdateLayout, onMoveLayer, onDelete }: PropertiesPanelProps) => {
+const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUpdateLayout, onDelete }: PropertiesPanelProps) => {
   if (!selectedComponent) {
     return (
       <div className="properties-panel">
@@ -115,60 +112,6 @@ const PropertiesPanel = ({ selectedComponent, layerInfo, onUpdateProps, onUpdate
           </div>
 
           {renderProps()}
-
-          {/* LAYER SECTION */}
-          {layerInfo && onMoveLayer && (
-            <div className="prop-group" style={{ marginTop: '24px' }}>
-              <label style={{ fontWeight: 600, display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>
-                Layer
-              </label>
-              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
-                Layer {layerInfo.level} of {layerInfo.total}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    type="button"
-                    className="btn" 
-                    style={{ flex: 1, padding: '4px' }}
-                    onClick={() => onMoveLayer(selectedComponent.id, "bring-forward")}
-                    disabled={layerInfo.isMax}
-                  >
-                    Bring forward
-                  </button>
-                  <button 
-                    type="button"
-                    className="btn" 
-                    style={{ flex: 1, padding: '4px' }}
-                    onClick={() => onMoveLayer(selectedComponent.id, "bring-to-front")}
-                    disabled={layerInfo.isMax}
-                  >
-                    Bring to front
-                  </button>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    type="button"
-                    className="btn" 
-                    style={{ flex: 1, padding: '4px' }}
-                    onClick={() => onMoveLayer(selectedComponent.id, "send-backward")}
-                    disabled={layerInfo.isMin}
-                  >
-                    Send backward
-                  </button>
-                  <button 
-                    type="button"
-                    className="btn" 
-                    style={{ flex: 1, padding: '4px' }}
-                    onClick={() => onMoveLayer(selectedComponent.id, "send-to-back")}
-                    disabled={layerInfo.isMin}
-                  >
-                    Send to back
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* DELETE SECTION */}
           <div className="prop-group" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #fee2e2' }}>

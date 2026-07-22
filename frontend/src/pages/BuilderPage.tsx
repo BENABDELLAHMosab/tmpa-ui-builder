@@ -20,8 +20,7 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { clamp, normalizeComponentsLayout, DEFAULT_LAYOUTS, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../utils/canvas';
 import { generateId } from '../utils/id';
 import { TABLE_STYLE_DEFAULTS } from '../utils/table';
-import { getHighestZIndex, getComponentLayerInfo, moveComponentLayer, normalizeComponentLayers } from '../utils/layers';
-import type { LayerAction } from '../utils/layers';
+import { getHighestZIndex, moveComponentLayer, normalizeComponentLayers } from '../utils/layers';
 import { SELECT_STYLE_DEFAULTS } from '../utils/select';
 import { createPortal } from 'react-dom';
 
@@ -324,9 +323,7 @@ const BuilderPage = () => {
     }
   };
 
-  const handleMoveLayer = (componentId: string, action: LayerAction) => {
-    setComponents(prev => moveComponentLayer(prev, componentId, action));
-  };
+
 
   const handleSave = async () => {
     if (!pageId || !page) return;
@@ -485,7 +482,6 @@ const BuilderPage = () => {
   }
 
   const selectedComponent = components.find(c => c.id === selectedComponentId) || null;
-  const selectedLayerInfo = selectedComponentId ? getComponentLayerInfo(components, selectedComponentId) : null;
 
   return (
     <DndContext
@@ -533,11 +529,9 @@ const BuilderPage = () => {
           
           <PropertiesPanel 
             selectedComponent={selectedComponent}
-            layerInfo={selectedLayerInfo}
             onUpdateProps={handleUpdateComponent}
             onUpdateStyle={handleUpdateComponentStyle}
             onUpdateLayout={handleUpdateComponentLayout}
-            onMoveLayer={handleMoveLayer}
             onDelete={handleDeleteComponent}
           />
         </div>

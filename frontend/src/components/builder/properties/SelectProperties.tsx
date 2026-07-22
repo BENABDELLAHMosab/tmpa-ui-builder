@@ -124,10 +124,10 @@ const SelectProperties = ({ component, onUpdateProps, onUpdateStyle }: SelectPro
         <h4 className="properties-section-title">Options</h4>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {options.map((option) => (
+          {options.map((option, index) => (
             <div key={option.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Option configuration</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Option {index + 1}</span>
                 <button 
                   type="button"
                   onClick={() => handleDeleteOption(option.id)}
@@ -152,26 +152,24 @@ const SelectProperties = ({ component, onUpdateProps, onUpdateStyle }: SelectPro
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 500, color: '#475569' }}>Display text</label>
-                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Text shown to the user.</div>
+                <label style={{ fontSize: '12px', fontWeight: 500, color: '#475569' }}>Label</label>
                 <input 
                   type="text" 
                   className="prop-input" 
                   value={option.label}
                   onChange={(e) => handleOptionChange(option.id, 'label', e.target.value)}
-                  placeholder="Display text"
+                  placeholder="Label"
                 />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 500, color: '#475569' }}>Technical value</label>
-                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Value used by a future form or API.</div>
+                <label style={{ fontSize: '12px', fontWeight: 500, color: '#475569' }}>Value</label>
                 <input 
                   type="text" 
                   className="prop-input" 
                   value={option.value}
                   onChange={(e) => handleOptionChange(option.id, 'value', e.target.value)}
-                  placeholder="Technical value"
+                  placeholder="Value"
                 />
               </div>
             </div>
