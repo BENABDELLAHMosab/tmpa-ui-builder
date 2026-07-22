@@ -1,4 +1,29 @@
-import type { BuilderTableColumn, BuilderTableRow } from '../types/page';
+import type { BuilderTableColumn, BuilderTableRow, BuilderComponentStyle } from '../types/page';
+
+export const TABLE_STYLE_DEFAULTS = {
+  fontFamily: "Inter",
+  fontStyle: "normal",
+  fontSize: 14,
+  fontWeight: 400,
+  textAlign: "left",
+  color: "#334155",
+  backgroundColor: "#ffffff",
+  headerBackgroundColor: "#1e3a66",
+  headerColor: "#ffffff",
+  borderColor: "#dbe3ef",
+  borderWidth: 1,
+  borderRadius: 8,
+  padding: 12
+} as const satisfies BuilderComponentStyle;
+
+export const TABLE_TYPOGRAPHY_DEFAULTS = {
+  fontFamily: TABLE_STYLE_DEFAULTS.fontFamily,
+  fontStyle: TABLE_STYLE_DEFAULTS.fontStyle,
+  fontSize: TABLE_STYLE_DEFAULTS.fontSize,
+  fontWeight: TABLE_STYLE_DEFAULTS.fontWeight,
+  textAlign: TABLE_STYLE_DEFAULTS.textAlign,
+  color: TABLE_STYLE_DEFAULTS.color
+} as const;
 
 export const normalizeTableProps = (props: Record<string, unknown>): Record<string, unknown> => {
   // If it already has the new format (columns array of objects with id), return it

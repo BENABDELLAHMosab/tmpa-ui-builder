@@ -61,6 +61,8 @@ export interface BuilderComponentStyle {
   fontWeight?: BuilderFontWeight;
   textAlign?: BuilderTextAlign;
   backgroundColor?: string;
+  headerBackgroundColor?: string;
+  headerColor?: string;
   padding?: number;
   borderRadius?: number;
   borderColor?: string;

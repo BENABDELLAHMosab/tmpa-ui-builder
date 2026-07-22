@@ -19,6 +19,7 @@ import {
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { clamp, normalizeComponentsLayout, DEFAULT_LAYOUTS, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../utils/canvas';
 import { generateId } from '../utils/id';
+import { TABLE_STYLE_DEFAULTS } from '../utils/table';
 import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number): BuilderComponent => {
@@ -130,6 +131,7 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
           }
         ]
       };
+      defaultStyle = { ...TABLE_STYLE_DEFAULTS };
       break;
     }
   }

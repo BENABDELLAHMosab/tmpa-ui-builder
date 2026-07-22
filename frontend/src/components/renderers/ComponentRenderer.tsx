@@ -1,5 +1,6 @@
 import type { BuilderComponent } from '../../types/page';
 import { FONT_FAMILY_FALLBACKS } from '../../types/page';
+import { TABLE_STYLE_DEFAULTS } from '../../utils/table';
 
 interface ComponentRendererProps {
   component: BuilderComponent;
@@ -215,8 +216,6 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
       );
     }
     case 'Table': {
-      // Defensive normalization in case this is an old Table format and it hasn't been normalized yet
-      // (e.g. during a preview or intermediate render before BuilderPage normalized it)
       let rawColumns = component.props.columns;
       let rawRows = component.props.rows;
       
@@ -230,41 +229,130 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
       
       const rows = Array.isArray(rawRows) ? rawRows : [];
 
+      const style = component.style || {};
+      const fontFamilyValue = style.fontFamily ?? TABLE_STYLE_DEFAULTS.fontFamily;
+      const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue as keyof typeof FONT_FAMILY_FALLBACKS] ?? FONT_FAMILY_FALLBACKS["Inter"];
+      
+      const fontStyle = style.fontStyle ?? TABLE_STYLE_DEFAULTS.fontStyle;
+      const fontSize = style.fontSize ?? TABLE_STYLE_DEFAULTS.fontSize;
+      const fontWeight = style.fontWeight ?? TABLE_STYLE_DEFAULTS.fontWeight;
+      const textAlign = (style.textAlign ?? TABLE_STYLE_DEFAULTS.textAlign) as any;
+      const color = style.color ?? TABLE_STYLE_DEFAULTS.color;
+      const backgroundColor = style.backgroundColor ?? TABLE_STYLE_DEFAULTS.backgroundColor;
+      
+      const headerBackgroundColor = style.headerBackgroundColor ?? TABLE_STYLE_DEFAULTS.headerBackgroundColor;
+      const headerColor = style.headerColor ?? TABLE_STYLE_DEFAULTS.headerColor;
+      
+      const borderColor = style.borderColor ?? TABLE_STYLE_DEFAULTS.borderColor;
+      const borderWidth = style.borderWidth ?? TABLE_STYLE_DEFAULTS.borderWidth;
+      const borderRadius = style.borderRadius ?? TABLE_STYLE_DEFAULTS.borderRadius;
+      const padding = style.padding ?? TABLE_STYLE_DEFAULTS.padding;
+
+      const internalBorder = borderWidth > 0 ? `${borderWidth}px solid ${borderColor}` : "none";
+
       return (
-        <div style={{ width: '100%', height: '100%', overflow: 'auto', boxSizing: 'border-box', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-          <table className="canvas-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-              <tr>
-                {columns.map((col) => (
-                  <th key={col.id} scope="col" style={{ padding: '12px 16px', fontWeight: 600, color: '#334155', fontSize: '14px', whiteSpace: 'nowrap' }}>
-                    {col.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
+        <div style={{
+          width: '100%',
+          height: '100%',
+          minWidth: 0,
+          minHeight: 0,
+          backgroundColor,
+          borderColor,
+          borderWidth,
+          borderStyle: 'solid',
+          borderRadius,
+          boxSizing: 'border-box',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            width: '100%',
+            height: '100%',
+            minWidth: 0,
+            minHeight: 0,
+            overflow: 'auto'
+          }}>
+            <table style={{
+              width: '100%',
+              minWidth: 'max-content',
+              borderCollapse: 'separate',
+              borderSpacing: 0
+            }}>
+              <thead style={{ backgroundColor: headerBackgroundColor }}>
                 <tr>
-                  <td colSpan={Math.max(1, columns.length)} style={{ textAlign: 'center', color: '#94a3b8', padding: '24px', fontSize: '14px' }}>
-                    No rows
-                  </td>
+                  {columns.map((col, idx) => {
+                    const isLast = idx === columns.length - 1;
+                    return (
+                      <th key={col.id} scope="col" style={{
+                        fontFamily: actualFontFamily,
+                        fontStyle,
+                        fontSize,
+                        fontWeight: 600,
+                        textAlign,
+                        color: headerColor,
+                        padding,
+                        boxSizing: 'border-box',
+                        whiteSpace: 'nowrap',
+                        borderRight: isLast ? 'none' : internalBorder,
+                        borderBottom: internalBorder
+                      }}>
+                        {col.label}
+                      </th>
+                    );
+                  })}
                 </tr>
-              ) : (
-                rows.map((row) => (
-                  <tr key={row.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    {columns.map((col) => {
-                      const cellData = row.cells && typeof row.cells[col.id] === 'string' ? row.cells[col.id] : "";
-                      return (
-                        <td key={`${row.id}-${col.id}`} style={{ padding: '12px 16px', color: '#475569', fontSize: '14px' }}>
-                          {cellData}
-                        </td>
-                      );
-                    })}
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={Math.max(1, columns.length)} style={{
+                      fontFamily: actualFontFamily,
+                      fontStyle,
+                      fontSize,
+                      fontWeight,
+                      textAlign,
+                      color,
+                      backgroundColor,
+                      padding,
+                      boxSizing: 'border-box',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      No rows
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  rows.map((row, rowIdx) => {
+                    const isLastRow = rowIdx === rows.length - 1;
+                    return (
+                      <tr key={row.id}>
+                        {columns.map((col, colIdx) => {
+                          const isLastCol = colIdx === columns.length - 1;
+                          const cellData = row.cells && typeof row.cells[col.id] === 'string' ? row.cells[col.id] : "";
+                          return (
+                            <td key={`${row.id}-${col.id}`} style={{
+                              fontFamily: actualFontFamily,
+                              fontStyle,
+                              fontSize,
+                              fontWeight,
+                              textAlign,
+                              color,
+                              backgroundColor,
+                              padding,
+                              boxSizing: 'border-box',
+                              whiteSpace: 'nowrap',
+                              borderRight: isLastCol ? 'none' : internalBorder,
+                              borderBottom: isLastRow ? 'none' : internalBorder
+                            }}>
+                              {cellData}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       );
     }

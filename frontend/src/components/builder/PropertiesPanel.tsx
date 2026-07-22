@@ -40,7 +40,7 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
       case 'Card':
         return <CardProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Table':
-        return <TableProperties component={selectedComponent} onUpdateProps={onUpdateProps} />;
+        return <TableProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       default:
         return null;
     }

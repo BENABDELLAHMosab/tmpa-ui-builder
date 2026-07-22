@@ -1,13 +1,16 @@
 import type { BuilderComponent } from '../../../types/page';
 import type { BuilderTableProps, BuilderTableColumn, BuilderTableRow } from '../../../types/page';
 import { generateId } from '../../../utils/id';
+import TypographyProperties from './TypographyProperties';
+import { TABLE_TYPOGRAPHY_DEFAULTS, TABLE_STYLE_DEFAULTS } from '../../../utils/table';
 
 interface TablePropertiesProps {
   component: BuilderComponent;
   onUpdateProps: (componentId: string, newProps: Record<string, unknown>) => void;
+  onUpdateStyle?: (componentId: string, key: any, value: any) => void;
 }
 
-const TableProperties = ({ component, onUpdateProps }: TablePropertiesProps) => {
+const TableProperties = ({ component, onUpdateProps, onUpdateStyle }: TablePropertiesProps) => {
   const props = component.props as unknown as BuilderTableProps;
   
   // Safe defaults if props are somehow missing
@@ -21,6 +24,14 @@ const TableProperties = ({ component, onUpdateProps }: TablePropertiesProps) => 
       rows: nextRows
     });
   };
+
+  const handleStyleChange = (key: string, value: any) => {
+    if (onUpdateStyle) {
+      onUpdateStyle(component.id, key, value);
+    }
+  };
+
+  const style = component.style;
 
   // --- COLUMNS ---
   const handleUpdateColumnLabel = (columnId: string, newLabel: string) => {
@@ -112,6 +123,83 @@ const TableProperties = ({ component, onUpdateProps }: TablePropertiesProps) => 
 
   return (
     <>
+      {/* TYPOGRAPHY SECTION */}
+      {onUpdateStyle && (
+        <TypographyProperties 
+          style={style} 
+          defaults={TABLE_TYPOGRAPHY_DEFAULTS} 
+          onChange={handleStyleChange} 
+        />
+      )}
+
+      {/* APPEARANCE SECTION */}
+      <div className="prop-group" style={{ marginTop: '16px' }}>
+        <label style={{ fontWeight: 600, display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>
+          Appearance
+        </label>
+        
+        <label>Header background color</label>
+        <input 
+          type="color" 
+          value={style?.headerBackgroundColor ?? TABLE_STYLE_DEFAULTS.headerBackgroundColor} 
+          onChange={(e) => handleStyleChange('headerBackgroundColor', e.target.value)} 
+        />
+
+        <label>Header text color</label>
+        <input 
+          type="color" 
+          value={style?.headerColor ?? TABLE_STYLE_DEFAULTS.headerColor} 
+          onChange={(e) => handleStyleChange('headerColor', e.target.value)} 
+        />
+
+        <label>Body background color</label>
+        <input 
+          type="color" 
+          value={style?.backgroundColor ?? TABLE_STYLE_DEFAULTS.backgroundColor} 
+          onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} 
+        />
+
+        <label>Border color</label>
+        <input 
+          type="color" 
+          value={style?.borderColor ?? TABLE_STYLE_DEFAULTS.borderColor} 
+          onChange={(e) => handleStyleChange('borderColor', e.target.value)} 
+        />
+
+        <label>Border width (px)</label>
+        <input 
+          type="number" 
+          min={0} max={10}
+          value={style?.borderWidth ?? TABLE_STYLE_DEFAULTS.borderWidth} 
+          onChange={(e) => {
+            const val = e.currentTarget.valueAsNumber;
+            if (!Number.isNaN(val)) handleStyleChange('borderWidth', val);
+          }} 
+        />
+
+        <label>Border radius (px)</label>
+        <input 
+          type="number" 
+          min={0} max={100}
+          value={style?.borderRadius ?? TABLE_STYLE_DEFAULTS.borderRadius} 
+          onChange={(e) => {
+            const val = e.currentTarget.valueAsNumber;
+            if (!Number.isNaN(val)) handleStyleChange('borderRadius', val);
+          }} 
+        />
+
+        <label>Cell padding (px)</label>
+        <input 
+          type="number" 
+          min={0} max={40}
+          value={style?.padding ?? TABLE_STYLE_DEFAULTS.padding} 
+          onChange={(e) => {
+            const val = e.currentTarget.valueAsNumber;
+            if (!Number.isNaN(val)) handleStyleChange('padding', val);
+          }} 
+        />
+      </div>
+
       {/* COLUMNS SECTION */}
       <div className="prop-group" style={{ marginTop: '16px' }}>
         <label style={{ fontWeight: 600, display: 'block', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>
