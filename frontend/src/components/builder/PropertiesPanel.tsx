@@ -4,6 +4,7 @@ import TextProperties from './properties/TextProperties';
 import ButtonProperties from './properties/ButtonProperties';
 import InputProperties from './properties/InputProperties';
 import CardProperties from './properties/CardProperties';
+import TableProperties from './properties/TableProperties';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
@@ -22,13 +23,6 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
     );
   }
 
-  const handlePropChange = (key: string, value: any) => {
-    onUpdateProps(selectedComponent.id, {
-      ...selectedComponent.props,
-      [key]: value
-    });
-  };
-
   const handleLayoutChange = <K extends keyof BuilderComponentLayout>(key: K, value: BuilderComponentLayout[K]) => {
     if (onUpdateLayout) {
       onUpdateLayout(selectedComponent.id, key, value);
@@ -46,20 +40,7 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
       case 'Card':
         return <CardProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Table':
-        return (
-          <div className="prop-group">
-            <label>Columns (comma separated)</label>
-            <input 
-              type="text" 
-              value={((selectedComponent.props.columns as string[]) || []).join(', ')} 
-              onChange={(e) => {
-                const val = e.target.value;
-                const columns = val.split(',').map(s => s.trim()).filter(Boolean);
-                handlePropChange('columns', columns);
-              }} 
-            />
-          </div>
-        );
+        return <TableProperties component={selectedComponent} onUpdateProps={onUpdateProps} />;
       default:
         return null;
     }

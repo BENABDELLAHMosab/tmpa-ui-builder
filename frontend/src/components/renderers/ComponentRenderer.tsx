@@ -214,25 +214,60 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
         </article>
       );
     }
-    case 'Table':
+    case 'Table': {
+      // Defensive normalization in case this is an old Table format and it hasn't been normalized yet
+      // (e.g. during a preview or intermediate render before BuilderPage normalized it)
+      let rawColumns = component.props.columns;
+      let rawRows = component.props.rows;
+      
+      const columns = Array.isArray(rawColumns) 
+        ? rawColumns.map((col: any, idx) => {
+            if (typeof col === 'string') return { id: `legacy-column-${idx}`, label: col };
+            if (col && typeof col === 'object' && 'id' in col) return col;
+            return { id: `legacy-column-${idx}`, label: "Untitled" };
+          })
+        : [];
+      
+      const rows = Array.isArray(rawRows) ? rawRows : [];
+
       return (
-        <div style={{ padding: '1.5rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', width: '100%', height: '100%', boxSizing: 'border-box', overflow: 'auto' }}>
-          <table className="canvas-table" style={{ width: '100%' }}>
-            <thead>
+        <div style={{ width: '100%', height: '100%', overflow: 'auto', boxSizing: 'border-box', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+          <table className="canvas-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
               <tr>
-                {((component.props.columns as string[]) || []).map((col, idx) => (
-                  <th key={idx}>{col}</th>
+                {columns.map((col) => (
+                  <th key={col.id} scope="col" style={{ padding: '12px 16px', fontWeight: 600, color: '#334155', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                    {col.label}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colSpan={((component.props.columns as string[]) || []).length} className="text-center text-muted" style={{ textAlign: 'center', color: '#94a3b8', padding: '1rem' }}>No data</td>
-              </tr>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={Math.max(1, columns.length)} style={{ textAlign: 'center', color: '#94a3b8', padding: '24px', fontSize: '14px' }}>
+                    No rows
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row) => (
+                  <tr key={row.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    {columns.map((col) => {
+                      const cellData = row.cells && typeof row.cells[col.id] === 'string' ? row.cells[col.id] : "";
+                      return (
+                        <td key={`${row.id}-${col.id}`} style={{ padding: '12px 16px', color: '#475569', fontSize: '14px' }}>
+                          {cellData}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       );
+    }
     default:
       return null;
   }

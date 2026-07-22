@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { clamp, normalizeComponentsLayout, DEFAULT_LAYOUTS, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../utils/canvas';
+import { generateId } from '../utils/id';
 import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number): BuilderComponent => {
@@ -106,7 +107,31 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
         padding: 20
       };
       break;
-    case 'Table': defaultProps = { columns: ["Column 1", "Column 2"] }; break;
+    case 'Table': {
+      const col1Id = generateId("column");
+      const col2Id = generateId("column");
+      const col3Id = generateId("column");
+      const rowId = generateId("row");
+      
+      defaultProps = {
+        columns: [
+          { id: col1Id, label: "Column 1" },
+          { id: col2Id, label: "Column 2" },
+          { id: col3Id, label: "Column 3" }
+        ],
+        rows: [
+          {
+            id: rowId,
+            cells: {
+              [col1Id]: "Value 1",
+              [col2Id]: "Value 2",
+              [col3Id]: "Value 3"
+            }
+          }
+        ]
+      };
+      break;
+    }
   }
 
   return {

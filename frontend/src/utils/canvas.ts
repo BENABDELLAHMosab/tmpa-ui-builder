@@ -1,4 +1,5 @@
 import type { BuilderComponent, BuilderComponentType } from '../types/page';
+import { normalizeTableProps } from './table';
 
 export const CANVAS_WIDTH = 1200;
 export const CANVAS_HEIGHT = 800;
@@ -41,8 +42,14 @@ export const normalizeComponentsLayout = (components: BuilderComponent[]): Build
       currentY = y + height + VERTICAL_SPACING;
     }
 
+    let finalProps = comp.props;
+    if (comp.type === 'Table') {
+      finalProps = normalizeTableProps(comp.props);
+    }
+
     return {
       ...comp,
+      props: finalProps,
       layout: {
         ...comp.layout,
         x,

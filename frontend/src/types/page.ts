@@ -28,6 +28,21 @@ export type BuilderCardProps = {
   content?: string;
 };
 
+export type BuilderTableColumn = {
+  id: string;
+  label: string;
+};
+
+export type BuilderTableRow = {
+  id: string;
+  cells: Record<string, string>;
+};
+
+export type BuilderTableProps = {
+  columns?: BuilderTableColumn[];
+  rows?: BuilderTableRow[];
+};
+
 export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {
   "Inter": '"Inter", system-ui, sans-serif',
   "Roboto": '"Roboto", system-ui, sans-serif',
