@@ -375,25 +375,36 @@ const BuilderPage = () => {
 
     const isCanvasItem = active.data.current?.source === 'canvas';
     if (isCanvasItem) {
-      setComponents(prev => prev.map(comp => {
-        if (comp.id === active.id) {
-          const domNode = document.getElementById(active.id as string);
-          const actualWidth = domNode ? domNode.offsetWidth : (comp.layout?.width ?? 0);
-          const actualHeight = domNode ? domNode.offsetHeight : (comp.layout?.height ?? 0);
+      setComponents(prev => {
+        const activeComponentId = active.id as string;
+        const activeComponent = prev.find(comp => comp.id === activeComponentId);
 
-          const newX = clamp((comp.layout?.x ?? 0) + delta.x, 0, CANVAS_WIDTH - actualWidth);
-          const newY = clamp((comp.layout?.y ?? 0) + delta.y, 0, CANVAS_HEIGHT - actualHeight);
-          return {
-            ...comp,
-            layout: {
-              ...comp.layout,
-              x: newX,
-              y: newY
-            }
-          };
+        if (!activeComponent || activeComponent.layout?.locked) {
+          return prev;
         }
-        return comp;
-      }));
+
+        const defaultLayout = DEFAULT_LAYOUTS[activeComponent.type] ?? { width: 300, height: 60 };
+        const width = activeComponent.layout?.width ?? defaultLayout.width;
+        const height = activeComponent.layout?.height ?? defaultLayout.height;
+
+        const nextX = clamp((activeComponent.layout?.x ?? 0) + delta.x, 0, CANVAS_WIDTH - width);
+        const nextY = clamp((activeComponent.layout?.y ?? 0) + delta.y, 0, CANVAS_HEIGHT - height);
+
+        const movedComponents = prev.map(comp =>
+          comp.id === activeComponentId
+            ? {
+                ...comp,
+                layout: {
+                  ...comp.layout,
+                  x: nextX,
+                  y: nextY
+                }
+              }
+            : comp
+        );
+
+        return moveComponentLayer(movedComponents, activeComponentId, "bring-to-front");
+      });
       return;
     }
 
