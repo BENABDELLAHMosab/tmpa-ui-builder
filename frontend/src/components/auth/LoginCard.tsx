@@ -65,13 +65,7 @@ const LoginCard = () => {
             disabled={loading}
           />
         </div>
-        <div className="login-options">
-          <label className="remember-me">
-            <input type="checkbox" />
-            <span>Remember me</span>
-          </label>
-          <a href="#" className="forgot-password" onClick={(e) => e.preventDefault()}>Forgot password?</a>
-        </div>
+
         
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
