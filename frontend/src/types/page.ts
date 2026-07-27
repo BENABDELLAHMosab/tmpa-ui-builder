@@ -1,6 +1,6 @@
 export type PageStatus = "draft" | "submitted" | "approved" | "rejected" | "published";
 
-export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio" | "Textarea" | "Image";
+export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio" | "Textarea" | "Image" | "Divider";
 
 export type BuilderFontWeight = 400 | 500 | 600 | 700;
 export type BuilderTextAlign = "left" | "center" | "right";
@@ -105,6 +105,14 @@ export const BUILDER_IMAGE_OBJECT_FITS = [
 
 export type BuilderImageObjectFit = (typeof BUILDER_IMAGE_OBJECT_FITS)[number];
 
+export const BUILDER_BORDER_STYLES = [
+  "solid",
+  "dashed",
+  "dotted"
+] as const;
+
+export type BuilderBorderStyle = (typeof BUILDER_BORDER_STYLES)[number];
+
 export interface BuilderComponentStyle {
   fontFamily?: BuilderFontFamily;
   fontStyle?: BuilderFontStyle;
@@ -119,6 +127,7 @@ export interface BuilderComponentStyle {
   borderRadius?: number;
   borderColor?: string;
   borderWidth?: number;
+  borderStyle?: BuilderBorderStyle;
   accentColor?: string;
   objectFit?: BuilderImageObjectFit;
 }

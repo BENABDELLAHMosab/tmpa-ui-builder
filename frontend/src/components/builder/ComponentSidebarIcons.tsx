@@ -90,3 +90,9 @@ export const ImageIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <polyline points="21 15 16 10 5 21" />
   </svg>
 );
+
+export const DividerIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" {...iconProps} {...props}>
+    <line x1="4" y1="12" x2="20" y2="12" />
+  </svg>
+);

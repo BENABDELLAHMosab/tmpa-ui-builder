@@ -26,6 +26,7 @@ import { CHECKBOX_STYLE_DEFAULTS } from '../utils/checkbox';
 import { RADIO_STYLE_DEFAULTS } from '../utils/radio';
 import { TEXTAREA_STYLE_DEFAULTS } from '../utils/textarea';
 import { IMAGE_STYLE_DEFAULTS } from '../utils/image';
+import { DIVIDER_STYLE_DEFAULTS } from '../utils/divider';
 import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number, initialZIndex?: number): BuilderComponent => {
@@ -205,6 +206,11 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
       defaultStyle = { ...IMAGE_STYLE_DEFAULTS };
       break;
     }
+    case 'Divider': {
+      defaultProps = {};
+      defaultStyle = { ...DIVIDER_STYLE_DEFAULTS };
+      break;
+    }
   }
 
   return {
@@ -268,7 +274,7 @@ const BuilderPage = () => {
   }, [pageId]);
 
   const isValidComponentType = (type: unknown): type is BuilderComponentType => {
-    return typeof type === 'string' && ['Text', 'Button', 'Input', 'Card', 'Table', 'Select', 'Checkbox', 'Radio', 'Textarea', 'Image'].includes(type);
+    return typeof type === 'string' && ['Text', 'Button', 'Input', 'Card', 'Table', 'Select', 'Checkbox', 'Radio', 'Textarea', 'Image', 'Divider'].includes(type);
   };
 
   const handleAddComponent = (type: BuilderComponentType) => {

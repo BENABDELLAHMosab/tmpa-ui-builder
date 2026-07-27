@@ -7,6 +7,7 @@ import { CHECKBOX_STYLE_DEFAULTS } from '../../utils/checkbox';
 import { RADIO_STYLE_DEFAULTS } from '../../utils/radio';
 import { TEXTAREA_STYLE_DEFAULTS } from '../../utils/textarea';
 import { IMAGE_STYLE_DEFAULTS, isBuilderImageObjectFit } from '../../utils/image';
+import { DIVIDER_STYLE_DEFAULTS, isBuilderBorderStyle } from '../../utils/divider';
 
 type RenderedImageProps = {
   componentId: string;
@@ -808,6 +809,48 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
           borderWidth={borderWidth}
           borderRadius={borderRadius}
         />
+      );
+    }
+    case 'Divider': {
+      const borderColor = typeof component.style?.borderColor === "string"
+        ? component.style.borderColor
+        : DIVIDER_STYLE_DEFAULTS.borderColor;
+
+      const borderWidth = typeof component.style?.borderWidth === "number" && Number.isFinite(component.style.borderWidth)
+        ? Math.min(10, Math.max(0, component.style.borderWidth))
+        : DIVIDER_STYLE_DEFAULTS.borderWidth;
+
+      const borderStyle = isBuilderBorderStyle(component.style?.borderStyle)
+        ? component.style.borderStyle
+        : DIVIDER_STYLE_DEFAULTS.borderStyle;
+
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            minWidth: 0,
+            minHeight: 0,
+            display: "flex",
+            alignItems: "center",
+            boxSizing: "border-box",
+            overflow: "hidden"
+          }}
+        >
+          <hr
+            style={{
+              width: "100%",
+              flexShrink: 0,
+              margin: 0,
+              padding: 0,
+              border: 0,
+              borderTopWidth: borderWidth,
+              borderTopStyle: borderStyle,
+              borderTopColor: borderColor,
+              boxSizing: "border-box"
+            }}
+          />
+        </div>
       );
     }
     default:
