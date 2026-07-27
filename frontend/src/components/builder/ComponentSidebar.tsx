@@ -1,16 +1,46 @@
+import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 
 import type { BuilderComponentType } from '../../types/page';
 import '../../styles/builder.css';
+import {
+  SearchIcon,
+  TextIcon,
+  ButtonIcon,
+  InputIcon,
+  TextareaIcon,
+  SelectIcon,
+  CheckboxIcon,
+  RadioIcon,
+  CardIcon,
+  TableIcon
+} from './ComponentSidebarIcons';
 
-const components: BuilderComponentType[] = ['Text', 'Button', 'Input', 'Textarea', 'Select', 'Checkbox', 'Radio', 'Card', 'Table'];
+type SidebarComponentDefinition = {
+  type: BuilderComponentType;
+  label: string;
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+};
+
+const COMPONENT_DEFINITIONS: SidebarComponentDefinition[] = [
+  { type: 'Text', label: 'Text', Icon: TextIcon },
+  { type: 'Button', label: 'Button', Icon: ButtonIcon },
+  { type: 'Input', label: 'Input', Icon: InputIcon },
+  { type: 'Textarea', label: 'Textarea', Icon: TextareaIcon },
+  { type: 'Select', label: 'Select', Icon: SelectIcon },
+  { type: 'Checkbox', label: 'Checkbox', Icon: CheckboxIcon },
+  { type: 'Radio', label: 'Radio', Icon: RadioIcon },
+  { type: 'Card', label: 'Card', Icon: CardIcon },
+  { type: 'Table', label: 'Table', Icon: TableIcon },
+];
 
 interface DraggableSidebarItemProps {
-  type: BuilderComponentType;
+  definition: SidebarComponentDefinition;
   onClick: (type: BuilderComponentType) => void;
 }
 
-const DraggableSidebarItem = ({ type, onClick }: DraggableSidebarItemProps) => {
+const DraggableSidebarItem = ({ definition, onClick }: DraggableSidebarItemProps) => {
+  const { type, label, Icon } = definition;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `sidebar-${type}`,
     data: {
@@ -21,13 +51,18 @@ const DraggableSidebarItem = ({ type, onClick }: DraggableSidebarItemProps) => {
 
   return (
     <button
+      type="button"
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`component-item ${isDragging ? 'is-dragging' : ''}`}
+      className={[
+        "component-sidebar__item",
+        isDragging ? "component-sidebar__item--dragging" : ""
+      ].filter(Boolean).join(" ")}
       onClick={() => onClick(type)}
     >
-      {type}
+      <Icon className="component-sidebar__item-icon" aria-hidden="true" focusable="false" />
+      <span className="component-sidebar__item-label">{label}</span>
     </button>
   );
 };
@@ -37,20 +72,45 @@ interface ComponentSidebarProps {
 }
 
 const ComponentSidebar = ({ onAddComponent }: ComponentSidebarProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredComponents = COMPONENT_DEFINITIONS.filter((definition) =>
+    definition.label.toLowerCase().includes(normalizedQuery)
+  );
+
   return (
     <div className="builder-sidebar">
-      <h3>Components</h3>
-      <div className="component-list">
-        {components.map((comp) => (
-          <DraggableSidebarItem
-            key={comp}
-            type={comp}
-            onClick={onAddComponent}
+      <div className="component-sidebar__palette">
+        <div className="component-sidebar__search">
+          <SearchIcon className="component-sidebar__search-icon" aria-hidden="true" focusable="false" />
+          <input
+            className="component-sidebar__search-input"
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.currentTarget.value)}
+            placeholder="Rechercher un composant..."
+            aria-label="Rechercher un composant"
           />
-        ))}
+        </div>
+
+        <div className="component-sidebar__list">
+          {filteredComponents.length > 0 ? (
+            filteredComponents.map((def) => (
+              <DraggableSidebarItem
+                key={def.type}
+                definition={def}
+                onClick={onAddComponent}
+              />
+            ))
+          ) : (
+            <p className="component-sidebar__empty">Aucun composant trouvé</p>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
 export default ComponentSidebar;
+
