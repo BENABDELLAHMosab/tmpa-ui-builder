@@ -3,6 +3,7 @@ import { FONT_FAMILY_FALLBACKS } from '../../types/page';
 import { TABLE_STYLE_DEFAULTS } from '../../utils/table';
 import { SELECT_STYLE_DEFAULTS } from '../../utils/select';
 import { CHECKBOX_STYLE_DEFAULTS } from '../../utils/checkbox';
+import { RADIO_STYLE_DEFAULTS } from '../../utils/radio';
 
 interface ComponentRendererProps {
   component: BuilderComponent;
@@ -504,6 +505,78 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
                 fontWeight: checkboxStyle.fontWeight ?? CHECKBOX_STYLE_DEFAULTS.fontWeight,
                 textAlign: (checkboxStyle.textAlign ?? CHECKBOX_STYLE_DEFAULTS.textAlign) as any,
                 color: checkboxStyle.color ?? CHECKBOX_STYLE_DEFAULTS.color,
+                overflowWrap: "anywhere"
+              }}
+            >
+              {label}
+              {required && (
+                <span aria-hidden="true">
+                  {" *"}
+                </span>
+              )}
+            </label>
+          )}
+        </div>
+      );
+    }
+    case 'Radio': {
+      const radioProps = component.props;
+      const radioStyle = component.style || {};
+
+      const label = typeof radioProps.label === "string" ? radioProps.label : "";
+      const name = typeof radioProps.name === "string" ? radioProps.name : "";
+      const value = typeof radioProps.value === "string" ? radioProps.value : "on";
+      const required = typeof radioProps.required === "boolean" ? radioProps.required : false;
+      const defaultChecked = typeof radioProps.defaultChecked === "boolean" ? radioProps.defaultChecked : false;
+
+      const fontFamilyValue = radioStyle.fontFamily ?? RADIO_STYLE_DEFAULTS.fontFamily;
+      const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue as keyof typeof FONT_FAMILY_FALLBACKS] ?? FONT_FAMILY_FALLBACKS["Inter"];
+
+      const radioId = `builder-radio-${component.id}`;
+      const padding = radioStyle.padding ?? RADIO_STYLE_DEFAULTS.padding;
+      const accentColor = radioStyle.accentColor ?? RADIO_STYLE_DEFAULTS.accentColor;
+
+      return (
+        <div 
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding,
+            boxSizing: "border-box",
+            overflow: "hidden"
+          }}
+        >
+          <input 
+            id={radioId}
+            type="radio"
+            name={name !== "" ? name : undefined}
+            value={value}
+            required={required}
+            defaultChecked={defaultChecked}
+            key={`${component.id}-${defaultChecked ? "checked" : "unchecked"}`}
+            style={{
+              width: 18,
+              height: 18,
+              flexShrink: 0,
+              accentColor
+            }}
+            aria-label={label === "" ? "Radio option" : undefined}
+          />
+          {label !== "" && (
+            <label 
+              htmlFor={radioId}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontFamily: actualFontFamily,
+                fontStyle: radioStyle.fontStyle ?? RADIO_STYLE_DEFAULTS.fontStyle,
+                fontSize: radioStyle.fontSize ?? RADIO_STYLE_DEFAULTS.fontSize,
+                fontWeight: radioStyle.fontWeight ?? RADIO_STYLE_DEFAULTS.fontWeight,
+                textAlign: (radioStyle.textAlign ?? RADIO_STYLE_DEFAULTS.textAlign) as any,
+                color: radioStyle.color ?? RADIO_STYLE_DEFAULTS.color,
                 overflowWrap: "anywhere"
               }}
             >

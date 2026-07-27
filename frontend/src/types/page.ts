@@ -1,6 +1,6 @@
 export type PageStatus = "draft" | "submitted" | "approved" | "rejected" | "published";
 
-export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox";
+export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio";
 
 export type BuilderFontWeight = 400 | 500 | 600 | 700;
 export type BuilderTextAlign = "left" | "center" | "right";
@@ -57,6 +57,14 @@ export type BuilderSelectProps = {
 };
 
 export type BuilderCheckboxProps = {
+  label?: string;
+  name?: string;
+  value?: string;
+  required?: boolean;
+  defaultChecked?: boolean;
+};
+
+export type BuilderRadioProps = {
   label?: string;
   name?: string;
   value?: string;
