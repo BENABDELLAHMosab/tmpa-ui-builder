@@ -27,6 +27,7 @@ import { RADIO_STYLE_DEFAULTS } from '../utils/radio';
 import { TEXTAREA_STYLE_DEFAULTS } from '../utils/textarea';
 import { IMAGE_STYLE_DEFAULTS } from '../utils/image';
 import { DIVIDER_STYLE_DEFAULTS } from '../utils/divider';
+import { CONTAINER_STYLE_DEFAULTS, normalizeComponentParents } from '../utils/container';
 import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number, initialZIndex?: number): BuilderComponent => {
@@ -44,6 +45,7 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
     return {
       id: newId,
       type: "Text",
+      parentId: null,
       props: { text: "New text" },
       style: {
         fontFamily: "Inter",
@@ -211,11 +213,17 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
       defaultStyle = { ...DIVIDER_STYLE_DEFAULTS };
       break;
     }
+    case 'Container': {
+      defaultProps = {};
+      defaultStyle = { ...CONTAINER_STYLE_DEFAULTS };
+      break;
+    }
   }
 
   return {
     id: newId,
     type,
+    parentId: null,
     props: defaultProps,
     ...(defaultStyle ? { style: defaultStyle } : {}),
     layout
@@ -261,7 +269,7 @@ const BuilderPage = () => {
         const data = await pageService.getPageById(pageId);
         setPage(data);
         if (data.schema && Array.isArray(data.schema.components)) {
-          setComponents(normalizeComponentLayers(normalizeComponentsLayout(data.schema.components as BuilderComponent[])));
+          setComponents(normalizeComponentLayers(normalizeComponentsLayout(normalizeComponentParents(data.schema.components as BuilderComponent[]))));
         }
       } catch (err: any) {
         setError(err.message || "Failed to load page");
@@ -274,7 +282,7 @@ const BuilderPage = () => {
   }, [pageId]);
 
   const isValidComponentType = (type: unknown): type is BuilderComponentType => {
-    return typeof type === 'string' && ['Text', 'Button', 'Input', 'Card', 'Table', 'Select', 'Checkbox', 'Radio', 'Textarea', 'Image', 'Divider'].includes(type);
+    return typeof type === 'string' && ['Text', 'Button', 'Input', 'Card', 'Table', 'Select', 'Checkbox', 'Radio', 'Textarea', 'Image', 'Divider', 'Container'].includes(type);
   };
 
   const handleAddComponent = (type: BuilderComponentType) => {

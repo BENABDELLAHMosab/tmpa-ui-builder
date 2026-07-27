@@ -8,6 +8,7 @@ import { RADIO_STYLE_DEFAULTS } from '../../utils/radio';
 import { TEXTAREA_STYLE_DEFAULTS } from '../../utils/textarea';
 import { IMAGE_STYLE_DEFAULTS, isBuilderImageObjectFit } from '../../utils/image';
 import { DIVIDER_STYLE_DEFAULTS, isBuilderBorderStyle } from '../../utils/divider';
+import { CONTAINER_STYLE_DEFAULTS } from '../../utils/container';
 
 type RenderedImageProps = {
   componentId: string;
@@ -851,6 +852,45 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
             }}
           />
         </div>
+      );
+    }
+    case 'Container': {
+      const backgroundColor = typeof component.style?.backgroundColor === "string"
+        ? component.style.backgroundColor
+        : CONTAINER_STYLE_DEFAULTS.backgroundColor;
+      
+      const borderColor = typeof component.style?.borderColor === "string"
+        ? component.style.borderColor
+        : CONTAINER_STYLE_DEFAULTS.borderColor;
+
+      const borderWidth = typeof component.style?.borderWidth === "number" && Number.isFinite(component.style.borderWidth)
+        ? Math.min(10, Math.max(0, component.style.borderWidth))
+        : CONTAINER_STYLE_DEFAULTS.borderWidth;
+
+      const borderStyle = isBuilderBorderStyle(component.style?.borderStyle)
+        ? component.style.borderStyle
+        : CONTAINER_STYLE_DEFAULTS.borderStyle;
+        
+      const borderRadius = typeof component.style?.borderRadius === "number" && Number.isFinite(component.style.borderRadius)
+        ? Math.min(100, Math.max(0, component.style.borderRadius))
+        : CONTAINER_STYLE_DEFAULTS.borderRadius;
+
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            minWidth: 0,
+            minHeight: 0,
+            boxSizing: "border-box",
+            backgroundColor,
+            borderColor,
+            borderWidth,
+            borderStyle,
+            borderRadius,
+            overflow: "hidden"
+          }}
+        />
       );
     }
     default:

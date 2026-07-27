@@ -15,7 +15,8 @@ import {
   CardIcon,
   TableIcon,
   ImageIcon,
-  DividerIcon
+  DividerIcon,
+  ContainerIcon
 } from './ComponentSidebarIcons';
 
 type SidebarComponentDefinition = {
@@ -31,6 +32,7 @@ const COMPONENT_DEFINITIONS: SidebarComponentDefinition[] = [
   { type: 'Textarea', label: 'Textarea', Icon: TextareaIcon },
   { type: 'Image', label: 'Image', Icon: ImageIcon },
   { type: 'Divider', label: 'Divider', Icon: DividerIcon },
+  { type: 'Container', label: 'Container', Icon: ContainerIcon },
   { type: 'Select', label: 'Select', Icon: SelectIcon },
   { type: 'Checkbox', label: 'Checkbox', Icon: CheckboxIcon },
   { type: 'Radio', label: 'Radio', Icon: RadioIcon },

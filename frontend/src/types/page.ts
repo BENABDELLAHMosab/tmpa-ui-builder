@@ -1,6 +1,6 @@
 export type PageStatus = "draft" | "submitted" | "approved" | "rejected" | "published";
 
-export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio" | "Textarea" | "Image" | "Divider";
+export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio" | "Textarea" | "Image" | "Divider" | "Container";
 
 export type BuilderFontWeight = 400 | 500 | 600 | 700;
 export type BuilderTextAlign = "left" | "center" | "right";
@@ -144,6 +144,7 @@ export interface BuilderComponentLayout {
 export interface BuilderComponent {
   id: string;
   type: BuilderComponentType;
+  parentId?: string | null;
   props: Record<string, unknown>;
   style?: BuilderComponentStyle;
   layout?: BuilderComponentLayout;
