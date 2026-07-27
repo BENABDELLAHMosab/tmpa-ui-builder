@@ -4,6 +4,7 @@ import { TABLE_STYLE_DEFAULTS } from '../../utils/table';
 import { SELECT_STYLE_DEFAULTS } from '../../utils/select';
 import { CHECKBOX_STYLE_DEFAULTS } from '../../utils/checkbox';
 import { RADIO_STYLE_DEFAULTS } from '../../utils/radio';
+import { TEXTAREA_STYLE_DEFAULTS } from '../../utils/textarea';
 
 interface ComponentRendererProps {
   component: BuilderComponent;
@@ -588,6 +589,89 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
               )}
             </label>
           )}
+        </div>
+      );
+    }
+    case 'Textarea': {
+      const textareaProps = component.props;
+      const textareaStyle = component.style || {};
+
+      const label = typeof textareaProps.label === "string" ? textareaProps.label : "";
+      const name = typeof textareaProps.name === "string" ? textareaProps.name : "";
+      const placeholder = typeof textareaProps.placeholder === "string" ? textareaProps.placeholder : "";
+      const required = typeof textareaProps.required === "boolean" ? textareaProps.required : false;
+      const defaultValue = typeof textareaProps.defaultValue === "string" ? textareaProps.defaultValue : "";
+
+      const fontFamilyValue = textareaStyle.fontFamily ?? TEXTAREA_STYLE_DEFAULTS.fontFamily;
+      const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue as keyof typeof FONT_FAMILY_FALLBACKS] ?? FONT_FAMILY_FALLBACKS["Inter"];
+      
+      const textareaId = `builder-textarea-${component.id}`;
+
+      return (
+        <div 
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            minWidth: 0,
+            minHeight: 0,
+            overflow: "hidden",
+            boxSizing: "border-box"
+          }}
+        >
+          {label !== "" && (
+            <label 
+              htmlFor={textareaId}
+              style={{
+                fontFamily: actualFontFamily,
+                fontStyle: textareaStyle.fontStyle ?? TEXTAREA_STYLE_DEFAULTS.fontStyle,
+                fontSize: textareaStyle.fontSize ?? TEXTAREA_STYLE_DEFAULTS.fontSize,
+                fontWeight: textareaStyle.fontWeight ?? TEXTAREA_STYLE_DEFAULTS.fontWeight,
+                textAlign: (textareaStyle.textAlign ?? TEXTAREA_STYLE_DEFAULTS.textAlign) as any,
+                color: textareaStyle.color ?? TEXTAREA_STYLE_DEFAULTS.color,
+                display: "block",
+                overflowWrap: "anywhere"
+              }}
+            >
+              {label}
+              {required && (
+                <span aria-hidden="true">
+                  {" *"}
+                </span>
+              )}
+            </label>
+          )}
+          <textarea 
+            id={textareaId}
+            name={name !== "" ? name : undefined}
+            placeholder={placeholder}
+            required={required}
+            defaultValue={defaultValue}
+            key={`${component.id}-${defaultValue}`}
+            aria-label={label === "" ? "Textarea" : undefined}
+            style={{
+              flex: 1,
+              width: "100%",
+              minWidth: 0,
+              minHeight: 0,
+              boxSizing: "border-box",
+              fontFamily: actualFontFamily,
+              fontStyle: textareaStyle.fontStyle ?? TEXTAREA_STYLE_DEFAULTS.fontStyle,
+              fontSize: textareaStyle.fontSize ?? TEXTAREA_STYLE_DEFAULTS.fontSize,
+              fontWeight: textareaStyle.fontWeight ?? TEXTAREA_STYLE_DEFAULTS.fontWeight,
+              textAlign: (textareaStyle.textAlign ?? TEXTAREA_STYLE_DEFAULTS.textAlign) as any,
+              color: textareaStyle.color ?? TEXTAREA_STYLE_DEFAULTS.color,
+              backgroundColor: textareaStyle.backgroundColor ?? TEXTAREA_STYLE_DEFAULTS.backgroundColor,
+              borderColor: textareaStyle.borderColor ?? TEXTAREA_STYLE_DEFAULTS.borderColor,
+              borderWidth: textareaStyle.borderWidth ?? TEXTAREA_STYLE_DEFAULTS.borderWidth,
+              borderStyle: "solid",
+              borderRadius: textareaStyle.borderRadius ?? TEXTAREA_STYLE_DEFAULTS.borderRadius,
+              padding: textareaStyle.padding ?? TEXTAREA_STYLE_DEFAULTS.padding,
+              resize: "none"
+            }}
+          />
         </div>
       );
     }

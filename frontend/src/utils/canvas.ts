@@ -13,6 +13,7 @@ export const DEFAULT_LAYOUTS: Record<BuilderComponentType, { width: number; heig
   Select: { width: 320, height: 76 },
   Checkbox: { width: 280, height: 48 },
   Radio: { width: 280, height: 48 },
+  Textarea: { width: 320, height: 120 },
 };
 
 export const MIN_DIMENSIONS_BY_TYPE: Record<BuilderComponentType, { width: number; height: number }> = {
@@ -24,6 +25,7 @@ export const MIN_DIMENSIONS_BY_TYPE: Record<BuilderComponentType, { width: numbe
   Select: { width: 120, height: 60 },
   Checkbox: { width: 120, height: 36 },
   Radio: { width: 120, height: 36 },
+  Textarea: { width: 160, height: 80 },
 };
 
 export const clamp = (value: number, min: number, max: number) => {

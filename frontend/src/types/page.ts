@@ -1,6 +1,6 @@
 export type PageStatus = "draft" | "submitted" | "approved" | "rejected" | "published";
 
-export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio";
+export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio" | "Textarea";
 
 export type BuilderFontWeight = 400 | 500 | 600 | 700;
 export type BuilderTextAlign = "left" | "center" | "right";
@@ -70,6 +70,14 @@ export type BuilderRadioProps = {
   value?: string;
   required?: boolean;
   defaultChecked?: boolean;
+};
+
+export type BuilderTextareaProps = {
+  label?: string;
+  name?: string;
+  placeholder?: string;
+  required?: boolean;
+  defaultValue?: string;
 };
 
 export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {
