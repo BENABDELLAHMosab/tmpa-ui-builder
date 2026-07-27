@@ -6,6 +6,7 @@ import InputProperties from './properties/InputProperties';
 import CardProperties from './properties/CardProperties';
 import TableProperties from './properties/TableProperties';
 import SelectProperties from './properties/SelectProperties';
+import CheckboxProperties from './properties/CheckboxProperties';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
@@ -47,6 +48,8 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
         return <TableProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Select':
         return <SelectProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
+      case 'Checkbox':
+        return <CheckboxProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       default:
         return <div style={{ padding: '16px', color: '#64748b' }}>No properties available for this component type.</div>;
     }

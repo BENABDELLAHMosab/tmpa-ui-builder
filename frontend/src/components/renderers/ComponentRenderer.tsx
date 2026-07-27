@@ -2,6 +2,7 @@ import type { BuilderComponent } from '../../types/page';
 import { FONT_FAMILY_FALLBACKS } from '../../types/page';
 import { TABLE_STYLE_DEFAULTS } from '../../utils/table';
 import { SELECT_STYLE_DEFAULTS } from '../../utils/select';
+import { CHECKBOX_STYLE_DEFAULTS } from '../../utils/checkbox';
 
 interface ComponentRendererProps {
   component: BuilderComponent;
@@ -442,6 +443,78 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
               );
             })}
           </select>
+        </div>
+      );
+    }
+    case 'Checkbox': {
+      const checkboxProps = component.props;
+      const checkboxStyle = component.style || {};
+
+      const label = typeof checkboxProps.label === "string" ? checkboxProps.label : "";
+      const name = typeof checkboxProps.name === "string" ? checkboxProps.name : "";
+      const value = typeof checkboxProps.value === "string" ? checkboxProps.value : "on";
+      const required = typeof checkboxProps.required === "boolean" ? checkboxProps.required : false;
+      const defaultChecked = typeof checkboxProps.defaultChecked === "boolean" ? checkboxProps.defaultChecked : false;
+
+      const fontFamilyValue = checkboxStyle.fontFamily ?? CHECKBOX_STYLE_DEFAULTS.fontFamily;
+      const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue as keyof typeof FONT_FAMILY_FALLBACKS] ?? FONT_FAMILY_FALLBACKS["Inter"];
+
+      const checkboxId = `builder-checkbox-${component.id}`;
+      const padding = checkboxStyle.padding ?? CHECKBOX_STYLE_DEFAULTS.padding;
+      const accentColor = checkboxStyle.accentColor ?? CHECKBOX_STYLE_DEFAULTS.accentColor;
+
+      return (
+        <div 
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding,
+            boxSizing: "border-box",
+            overflow: "hidden"
+          }}
+        >
+          <input 
+            id={checkboxId}
+            type="checkbox"
+            name={name !== "" ? name : undefined}
+            value={value}
+            required={required}
+            defaultChecked={defaultChecked}
+            key={`${component.id}-${defaultChecked ? "checked" : "unchecked"}`}
+            style={{
+              width: 18,
+              height: 18,
+              flexShrink: 0,
+              accentColor
+            }}
+            aria-label={label === "" ? "Checkbox" : undefined}
+          />
+          {label !== "" && (
+            <label 
+              htmlFor={checkboxId}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontFamily: actualFontFamily,
+                fontStyle: checkboxStyle.fontStyle ?? CHECKBOX_STYLE_DEFAULTS.fontStyle,
+                fontSize: checkboxStyle.fontSize ?? CHECKBOX_STYLE_DEFAULTS.fontSize,
+                fontWeight: checkboxStyle.fontWeight ?? CHECKBOX_STYLE_DEFAULTS.fontWeight,
+                textAlign: (checkboxStyle.textAlign ?? CHECKBOX_STYLE_DEFAULTS.textAlign) as any,
+                color: checkboxStyle.color ?? CHECKBOX_STYLE_DEFAULTS.color,
+                overflowWrap: "anywhere"
+              }}
+            >
+              {label}
+              {required && (
+                <span aria-hidden="true">
+                  {" *"}
+                </span>
+              )}
+            </label>
+          )}
         </div>
       );
     }

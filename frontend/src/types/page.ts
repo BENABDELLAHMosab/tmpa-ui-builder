@@ -1,6 +1,6 @@
 export type PageStatus = "draft" | "submitted" | "approved" | "rejected" | "published";
 
-export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select";
+export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox";
 
 export type BuilderFontWeight = 400 | 500 | 600 | 700;
 export type BuilderTextAlign = "left" | "center" | "right";
@@ -56,6 +56,14 @@ export type BuilderSelectProps = {
   options?: BuilderSelectOption[];
 };
 
+export type BuilderCheckboxProps = {
+  label?: string;
+  name?: string;
+  value?: string;
+  required?: boolean;
+  defaultChecked?: boolean;
+};
+
 export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {
   "Inter": '"Inter", system-ui, sans-serif',
   "Roboto": '"Roboto", system-ui, sans-serif',
@@ -80,6 +88,7 @@ export interface BuilderComponentStyle {
   borderRadius?: number;
   borderColor?: string;
   borderWidth?: number;
+  accentColor?: string;
 }
 
 export interface BuilderComponentLayout {

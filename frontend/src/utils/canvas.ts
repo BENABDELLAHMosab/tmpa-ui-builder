@@ -11,6 +11,7 @@ export const DEFAULT_LAYOUTS: Record<BuilderComponentType, { width: number; heig
   Card: { width: 360, height: 160 },
   Table: { width: 600, height: 240 },
   Select: { width: 320, height: 76 },
+  Checkbox: { width: 280, height: 48 },
 };
 
 export const MIN_DIMENSIONS_BY_TYPE: Record<BuilderComponentType, { width: number; height: number }> = {
@@ -20,6 +21,7 @@ export const MIN_DIMENSIONS_BY_TYPE: Record<BuilderComponentType, { width: numbe
   Card: { width: 160, height: 100 },
   Table: { width: 300, height: 160 },
   Select: { width: 120, height: 60 },
+  Checkbox: { width: 120, height: 36 },
 };
 
 export const clamp = (value: number, min: number, max: number) => {

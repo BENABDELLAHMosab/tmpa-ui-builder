@@ -3,7 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import type { BuilderComponentType } from '../../types/page';
 import '../../styles/builder.css';
 
-const components: BuilderComponentType[] = ['Text', 'Button', 'Input', 'Select', 'Card', 'Table'];
+const components: BuilderComponentType[] = ['Text', 'Button', 'Input', 'Select', 'Checkbox', 'Card', 'Table'];
 
 interface DraggableSidebarItemProps {
   type: BuilderComponentType;
