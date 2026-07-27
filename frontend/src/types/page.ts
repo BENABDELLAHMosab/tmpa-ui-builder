@@ -1,6 +1,6 @@
 export type PageStatus = "draft" | "submitted" | "approved" | "rejected" | "published";
 
-export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio" | "Textarea";
+export type BuilderComponentType = "Text" | "Button" | "Input" | "Card" | "Table" | "Select" | "Checkbox" | "Radio" | "Textarea" | "Image";
 
 export type BuilderFontWeight = 400 | 500 | 600 | 700;
 export type BuilderTextAlign = "left" | "center" | "right";
@@ -80,6 +80,11 @@ export type BuilderTextareaProps = {
   defaultValue?: string;
 };
 
+export type BuilderImageProps = {
+  src?: string;
+  alt?: string;
+};
+
 export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {
   "Inter": '"Inter", system-ui, sans-serif',
   "Roboto": '"Roboto", system-ui, sans-serif',
@@ -89,6 +94,16 @@ export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {
   "Arial": 'Arial, Helvetica, sans-serif',
   "system-ui": 'system-ui, sans-serif'
 };
+
+export const BUILDER_IMAGE_OBJECT_FITS = [
+  "cover",
+  "contain",
+  "fill",
+  "none",
+  "scale-down"
+] as const;
+
+export type BuilderImageObjectFit = (typeof BUILDER_IMAGE_OBJECT_FITS)[number];
 
 export interface BuilderComponentStyle {
   fontFamily?: BuilderFontFamily;
@@ -105,6 +120,7 @@ export interface BuilderComponentStyle {
   borderColor?: string;
   borderWidth?: number;
   accentColor?: string;
+  objectFit?: BuilderImageObjectFit;
 }
 
 export interface BuilderComponentLayout {

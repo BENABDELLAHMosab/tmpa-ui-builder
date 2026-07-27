@@ -1,10 +1,116 @@
-import type { BuilderComponent } from '../../types/page';
+import { useState } from 'react';
+import type { BuilderComponent, BuilderImageObjectFit, BuilderImageProps } from '../../types/page';
 import { FONT_FAMILY_FALLBACKS } from '../../types/page';
 import { TABLE_STYLE_DEFAULTS } from '../../utils/table';
 import { SELECT_STYLE_DEFAULTS } from '../../utils/select';
 import { CHECKBOX_STYLE_DEFAULTS } from '../../utils/checkbox';
 import { RADIO_STYLE_DEFAULTS } from '../../utils/radio';
 import { TEXTAREA_STYLE_DEFAULTS } from '../../utils/textarea';
+import { IMAGE_STYLE_DEFAULTS, isBuilderImageObjectFit } from '../../utils/image';
+
+type RenderedImageProps = {
+  componentId: string;
+  src: string;
+  alt: string;
+  objectFit: BuilderImageObjectFit;
+  backgroundColor: string;
+  borderColor: string;
+  borderWidth: number;
+  borderRadius: number;
+};
+
+function RenderedImage({
+  componentId,
+  src,
+  alt,
+  objectFit,
+  backgroundColor,
+  borderColor,
+  borderWidth,
+  borderRadius
+}: RenderedImageProps) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+
+  const normalizedSrc = src.trim();
+  const hasError = normalizedSrc !== "" && failedSrc === normalizedSrc;
+
+  return (
+    <div
+      id={`builder-image-${componentId}`}
+      style={{
+        width: "100%",
+        height: "100%",
+        minWidth: 0,
+        minHeight: 0,
+        boxSizing: "border-box",
+        overflow: "hidden",
+        backgroundColor,
+        borderColor,
+        borderWidth,
+        borderStyle: "solid",
+        borderRadius,
+      }}
+    >
+      {normalizedSrc === "" ? (
+        <div 
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            width: '100%', 
+            height: '100%',
+            color: 'rgba(0,0,0,0.4)',
+            pointerEvents: 'none'
+          }}
+          role={alt !== "" ? "img" : undefined}
+          aria-label={alt !== "" ? alt : undefined}
+          aria-hidden={alt === "" ? "true" : undefined}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 24, height: 24, marginBottom: 4 }}>
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          <span style={{ fontSize: 12, fontWeight: 500 }}>Image</span>
+        </div>
+      ) : hasError ? (
+        <div 
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            width: '100%', 
+            height: '100%',
+            color: 'rgba(0,0,0,0.4)',
+            fontSize: 12,
+            fontWeight: 500
+          }}
+          role={alt !== "" ? "img" : undefined}
+          aria-label={alt !== "" ? alt : undefined}
+          aria-hidden={alt === "" ? "true" : undefined}
+        >
+          Image unavailable
+        </div>
+      ) : (
+        <img
+          key={normalizedSrc}
+          src={normalizedSrc}
+          alt={alt}
+          draggable={false}
+          onError={() => setFailedSrc(normalizedSrc)}
+          style={{
+            display: "block",
+            width: "100%",
+            height: "100%",
+            objectFit,
+            userSelect: "none"
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
 interface ComponentRendererProps {
   component: BuilderComponent;
@@ -673,6 +779,35 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
             }}
           />
         </div>
+      );
+    }
+    case 'Image': {
+      const imageProps = component.props as BuilderImageProps;
+      const imageStyle = component.style || {};
+
+      const src = typeof imageProps.src === "string" ? imageProps.src : "";
+      const alt = typeof imageProps.alt === "string" ? imageProps.alt : "Image";
+      
+      const objectFit = isBuilderImageObjectFit(imageStyle.objectFit) 
+        ? imageStyle.objectFit 
+        : IMAGE_STYLE_DEFAULTS.objectFit;
+
+      const backgroundColor = imageStyle.backgroundColor ?? IMAGE_STYLE_DEFAULTS.backgroundColor;
+      const borderColor = imageStyle.borderColor ?? IMAGE_STYLE_DEFAULTS.borderColor;
+      const borderWidth = imageStyle.borderWidth ?? IMAGE_STYLE_DEFAULTS.borderWidth;
+      const borderRadius = imageStyle.borderRadius ?? IMAGE_STYLE_DEFAULTS.borderRadius;
+
+      return (
+        <RenderedImage
+          componentId={component.id}
+          src={src}
+          alt={alt}
+          objectFit={objectFit}
+          backgroundColor={backgroundColor}
+          borderColor={borderColor}
+          borderWidth={borderWidth}
+          borderRadius={borderRadius}
+        />
       );
     }
     default:

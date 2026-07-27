@@ -9,6 +9,7 @@ import SelectProperties from './properties/SelectProperties';
 import CheckboxProperties from './properties/CheckboxProperties';
 import RadioProperties from './properties/RadioProperties';
 import TextareaProperties from './properties/TextareaProperties';
+import ImageProperties from './properties/ImageProperties';
 
 interface PropertiesPanelProps {
   selectedComponent: BuilderComponent | null;
@@ -56,6 +57,8 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
         return <RadioProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       case 'Textarea':
         return <TextareaProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
+      case 'Image':
+        return <ImageProperties component={selectedComponent} onUpdateProps={onUpdateProps} onUpdateStyle={onUpdateStyle} />;
       default:
         return <div style={{ padding: '16px', color: '#64748b' }}>No properties available for this component type.</div>;
     }

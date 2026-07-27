@@ -25,6 +25,7 @@ import { SELECT_STYLE_DEFAULTS } from '../utils/select';
 import { CHECKBOX_STYLE_DEFAULTS } from '../utils/checkbox';
 import { RADIO_STYLE_DEFAULTS } from '../utils/radio';
 import { TEXTAREA_STYLE_DEFAULTS } from '../utils/textarea';
+import { IMAGE_STYLE_DEFAULTS } from '../utils/image';
 import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number, initialZIndex?: number): BuilderComponent => {
@@ -196,6 +197,14 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
       defaultStyle = { ...TEXTAREA_STYLE_DEFAULTS };
       break;
     }
+    case 'Image': {
+      defaultProps = {
+        src: "",
+        alt: "Image"
+      };
+      defaultStyle = { ...IMAGE_STYLE_DEFAULTS };
+      break;
+    }
   }
 
   return {
@@ -259,7 +268,7 @@ const BuilderPage = () => {
   }, [pageId]);
 
   const isValidComponentType = (type: unknown): type is BuilderComponentType => {
-    return typeof type === 'string' && ['Text', 'Button', 'Input', 'Card', 'Table', 'Select', 'Checkbox', 'Radio', 'Textarea'].includes(type);
+    return typeof type === 'string' && ['Text', 'Button', 'Input', 'Card', 'Table', 'Select', 'Checkbox', 'Radio', 'Textarea', 'Image'].includes(type);
   };
 
   const handleAddComponent = (type: BuilderComponentType) => {
