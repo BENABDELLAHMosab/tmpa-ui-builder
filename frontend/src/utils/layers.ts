@@ -25,32 +25,40 @@ export function isValidZIndex(value: unknown): value is number {
 export function normalizeComponentLayers(components: BuilderComponent[]): BuilderComponent[] {
   if (components.length === 0) return [];
 
-  // Create an array mapping each component to its sorting criteria
-  const items = components.map((comp, index) => {
+  const zIndexMap = new Map<string, number>();
+
+  // Group by parentId
+  const groups = new Map<string | null, Array<{ id: string; originalIndex: number; effectiveZIndex: number }>>();
+  
+  components.forEach((comp, index) => {
+    const pId = comp.parentId ?? null;
+    if (!groups.has(pId)) groups.set(pId, []);
+    
     const rawZ = comp.layout?.zIndex;
-    const effectiveZIndex = isValidZIndex(rawZ) ? rawZ : index + 1;
-    return {
+    const effectiveZIndex = isValidZIndex(rawZ) ? rawZ : groups.get(pId)!.length + 1;
+    
+    groups.get(pId)!.push({
       id: comp.id,
       originalIndex: index,
       effectiveZIndex
-    };
+    });
   });
 
-  // Sort by effectiveZIndex, then fallback to originalIndex for stability/duplicates
-  items.sort((a, b) => {
-    if (a.effectiveZIndex !== b.effectiveZIndex) {
-      return a.effectiveZIndex - b.effectiveZIndex;
-    }
-    return a.originalIndex - b.originalIndex;
-  });
+  // Sort and assign within each group
+  for (const group of groups.values()) {
+    group.sort((a, b) => {
+      if (a.effectiveZIndex !== b.effectiveZIndex) {
+        return a.effectiveZIndex - b.effectiveZIndex;
+      }
+      return a.originalIndex - b.originalIndex;
+    });
 
-  // Now assign dense zIndex from 1 to N
-  const zIndexMap = new Map<string, number>();
-  items.forEach((item, i) => {
-    zIndexMap.set(item.id, i + 1);
-  });
+    group.forEach((item, i) => {
+      zIndexMap.set(item.id, i + 1);
+    });
+  }
 
-  // Rebuild the final array preserving the original array order
+  // Rebuild preserving original array order
   return components.map(comp => ({
     ...comp,
     layout: {
@@ -60,14 +68,16 @@ export function normalizeComponentLayers(components: BuilderComponent[]): Builde
   }));
 }
 
-export function getHighestZIndex(components: BuilderComponent[]): number {
+export function getHighestZIndex(components: BuilderComponent[], parentId: string | null = null): number {
   if (components.length === 0) return 0;
   
   let max = 0;
   for (const comp of components) {
-    const z = comp.layout?.zIndex;
-    if (isValidZIndex(z) && z > max) {
-      max = z;
+    if ((comp.parentId ?? null) === parentId) {
+      const z = comp.layout?.zIndex;
+      if (isValidZIndex(z) && z > max) {
+        max = z;
+      }
     }
   }
   return max;
@@ -76,12 +86,14 @@ export function getHighestZIndex(components: BuilderComponent[]): number {
 export function getComponentLayerInfo(components: BuilderComponent[], id: string): ComponentLayerInfo | null {
   if (components.length === 0) return null;
 
-  // Assume components are already normalized.
   const comp = components.find(c => c.id === id);
   if (!comp) return null;
 
+  const parentId = comp.parentId ?? null;
+  const siblings = components.filter(c => (c.parentId ?? null) === parentId);
+
   const level = comp.layout?.zIndex ?? 1;
-  const total = components.length;
+  const total = siblings.length;
 
   return {
     level,
@@ -96,47 +108,50 @@ export function moveComponentLayer(
   id: string,
   action: LayerAction
 ): BuilderComponent[] {
-  // Always work defensively with normalized layers
   const normalized = normalizeComponentLayers(components);
   
-  const targetIndex = normalized.findIndex(c => c.id === id);
-  if (targetIndex === -1) return normalized;
+  const targetComp = normalized.find(c => c.id === id);
+  if (!targetComp) return normalized;
 
-  // Extract items sorted by zIndex to know visual order
-  const sorted = [...normalized].sort((a, b) => (a.layout!.zIndex!) - (b.layout!.zIndex!));
+  const parentId = targetComp.parentId ?? null;
+  const siblings = normalized.filter(c => (c.parentId ?? null) === parentId);
   
-  const currentIndex = sorted.findIndex(c => c.id === id);
+  const sortedSiblings = [...siblings].sort((a, b) => (a.layout!.zIndex!) - (b.layout!.zIndex!));
+  
+  const currentIndex = sortedSiblings.findIndex(c => c.id === id);
   if (currentIndex === -1) return normalized;
 
   if (action === "send-to-back" && currentIndex > 0) {
-    const item = sorted.splice(currentIndex, 1)[0];
-    sorted.unshift(item);
+    const item = sortedSiblings.splice(currentIndex, 1)[0];
+    sortedSiblings.unshift(item);
   } else if (action === "send-backward" && currentIndex > 0) {
-    const item = sorted.splice(currentIndex, 1)[0];
-    sorted.splice(currentIndex - 1, 0, item);
-  } else if (action === "bring-forward" && currentIndex < sorted.length - 1) {
-    const item = sorted.splice(currentIndex, 1)[0];
-    sorted.splice(currentIndex + 1, 0, item);
-  } else if (action === "bring-to-front" && currentIndex < sorted.length - 1) {
-    const item = sorted.splice(currentIndex, 1)[0];
-    sorted.push(item);
+    const item = sortedSiblings.splice(currentIndex, 1)[0];
+    sortedSiblings.splice(currentIndex - 1, 0, item);
+  } else if (action === "bring-forward" && currentIndex < sortedSiblings.length - 1) {
+    const item = sortedSiblings.splice(currentIndex, 1)[0];
+    sortedSiblings.splice(currentIndex + 1, 0, item);
+  } else if (action === "bring-to-front" && currentIndex < sortedSiblings.length - 1) {
+    const item = sortedSiblings.splice(currentIndex, 1)[0];
+    sortedSiblings.push(item);
   } else {
-    // Action not possible or invalid
     return normalized;
   }
 
-  // Assign dense zIndex 1..N based on new visual order
-  const zIndexMap = new Map<string, number>();
-  sorted.forEach((item, i) => {
-    zIndexMap.set(item.id, i + 1);
+  const siblingZIndexMap = new Map<string, number>();
+  sortedSiblings.forEach((item, i) => {
+    siblingZIndexMap.set(item.id, i + 1);
   });
 
-  // Return components preserving original array order
-  return normalized.map(comp => ({
-    ...comp,
-    layout: {
-      ...comp.layout,
-      zIndex: zIndexMap.get(comp.id)!
+  return normalized.map(comp => {
+    if ((comp.parentId ?? null) === parentId && siblingZIndexMap.has(comp.id)) {
+      return {
+        ...comp,
+        layout: {
+          ...comp.layout,
+          zIndex: siblingZIndexMap.get(comp.id)!
+        }
+      };
     }
-  }));
+    return comp;
+  });
 }

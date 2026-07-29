@@ -464,27 +464,56 @@
     transform: translate(-50%, 0);
     opacity: 1;
   }
+}
 
-  .drag-over {
-    background-color: var(--color-info-bg);
-    border: 2px dashed var(--color-secondary);
-    transition: all 0.2s ease-in-out;
-  }
+.drag-over {
+  background-color: var(--color-info-bg);
+  border: 2px dashed var(--color-secondary);
+  transition: all 0.2s ease-in-out;
+}
 
-  .is-dragging {
-    opacity: 0.5;
-    cursor: grabbing !important;
-  }
+.drag-over-container {
+  background-color: rgba(47, 128, 237, 0.1);
+  box-shadow: inset 0 0 0 2px var(--color-secondary);
+  transition: all 0.2s ease-in-out;
+}
 
-  .drag-overlay-item {
-    background-color: #ffffff;
-    border: 2px solid var(--color-secondary);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    border-radius: var(--radius-sm);
-    padding: 0.6rem 1rem;
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: var(--color-text);
-    pointer-events: none;
-    cursor: grabbing;
-  }
+.is-dragging {
+  opacity: 0.5;
+  cursor: grabbing !important;
+}
+
+.drag-overlay-item {
+  background-color: #ffffff;
+  border: 2px solid var(--color-secondary);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  pointer-events: none;
+  cursor: grabbing;
+}
+
+/* Container V2 Specific Classes */
+.container-outer-frame {
+  pointer-events: none; /* frame non interactive */
+}
+
+.container-drag-surface {
+  pointer-events: auto; /* drag surface interactive */
+  cursor: grab;
+}
+
+.container-drag-surface:active {
+  cursor: grabbing;
+}
+
+.container-content-layer {
+  pointer-events: none; /* content layer pointer-events none */
+}
+
+.child-wrapper {
+  pointer-events: auto; /* wrappers enfants pointer-events auto */
+}

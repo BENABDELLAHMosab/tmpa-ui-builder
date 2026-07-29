@@ -14,6 +14,7 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  pointerWithin,
   DragOverlay
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
@@ -27,10 +28,10 @@ import { RADIO_STYLE_DEFAULTS } from '../utils/radio';
 import { TEXTAREA_STYLE_DEFAULTS } from '../utils/textarea';
 import { IMAGE_STYLE_DEFAULTS } from '../utils/image';
 import { DIVIDER_STYLE_DEFAULTS } from '../utils/divider';
-import { CONTAINER_STYLE_DEFAULTS, normalizeComponentParents } from '../utils/container';
+import { CONTAINER_STYLE_DEFAULTS, normalizeComponentParents, getContainerInnerDimensions, getDescendantIds } from '../utils/container';
 import { createPortal } from 'react-dom';
 
-const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number, initialZIndex?: number): BuilderComponent => {
+const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number, initialZIndex?: number, parentId: string | null = null): BuilderComponent => {
   const newId = `comp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   const defaultLayout = DEFAULT_LAYOUTS[type] ?? { width: 300, height: 60 };
   const layout = {
@@ -45,7 +46,7 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
     return {
       id: newId,
       type: "Text",
-      parentId: null,
+      parentId,
       props: { text: "New text" },
       style: {
         fontFamily: "Inter",
@@ -223,11 +224,36 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
   return {
     id: newId,
     type,
-    parentId: null,
+    parentId,
     props: defaultProps,
     ...(defaultStyle ? { style: defaultStyle } : {}),
     layout
   };
+};
+
+const customCollisionDetection = (args: any) => {
+  const pointerCollisions = pointerWithin(args);
+  
+  if (pointerCollisions.length > 0) {
+    const activeData = args.active.data.current;
+    const isSidebar = activeData?.source === 'sidebar';
+    const activeType = activeData?.componentType;
+
+    if (isSidebar) {
+      if (activeType === 'Container') {
+        const canvasCollision = pointerCollisions.find(c => c.id === 'builder-canvas');
+        return canvasCollision ? [canvasCollision] : [];
+      } else {
+        const containerCollision = pointerCollisions.find(c => String(c.id).startsWith('container-drop-'));
+        if (containerCollision) return [containerCollision];
+        const canvasCollision = pointerCollisions.find(c => c.id === 'builder-canvas');
+        return canvasCollision ? [canvasCollision] : [];
+      }
+    } else {
+      return pointerCollisions;
+    }
+  }
+  return closestCenter(args);
 };
 
 const BuilderPage = () => {
@@ -337,10 +363,28 @@ const BuilderPage = () => {
         const minDims = MIN_DIMENSIONS_BY_TYPE[comp.type] ?? { width: 50, height: 20 };
         let safeValue = value;
         if (typeof value === 'number') {
-          if (key === 'x') safeValue = clamp(value, 0, CANVAS_WIDTH - (comp.layout?.width ?? 0)) as any;
-          else if (key === 'y') safeValue = clamp(value, 0, CANVAS_HEIGHT - (comp.layout?.height ?? 0)) as any;
-          else if (key === 'width') safeValue = clamp(value, minDims.width, CANVAS_WIDTH - (comp.layout?.x ?? 0)) as any;
-          else if (key === 'height') safeValue = clamp(value, minDims.height, CANVAS_HEIGHT - (comp.layout?.y ?? 0)) as any;
+          let maxWidth = CANVAS_WIDTH;
+          let maxHeight = CANVAS_HEIGHT;
+
+          if (comp.parentId) {
+            const parent = prev.find(p => p.id === comp.parentId);
+            if (parent) {
+              const borderWidth = typeof parent.style?.borderWidth === 'number' 
+                ? Math.max(0, parent.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+              const { innerWidth, innerHeight } = getContainerInnerDimensions(
+                parent.layout?.width ?? 300,
+                parent.layout?.height ?? 60,
+                borderWidth
+              );
+              maxWidth = innerWidth;
+              maxHeight = innerHeight;
+            }
+          }
+
+          if (key === 'x') safeValue = clamp(value, 0, Math.max(0, maxWidth - (comp.layout?.width ?? 0))) as any;
+          else if (key === 'y') safeValue = clamp(value, 0, Math.max(0, maxHeight - (comp.layout?.height ?? 0))) as any;
+          else if (key === 'width') safeValue = clamp(value, minDims.width, Math.max(0, maxWidth - (comp.layout?.x ?? 0))) as any;
+          else if (key === 'height') safeValue = clamp(value, minDims.height, Math.max(0, maxHeight - (comp.layout?.y ?? 0))) as any;
         }
         
         return {
@@ -373,16 +417,15 @@ const BuilderPage = () => {
 
 
   const handleDeleteComponent = (componentId: string) => {
-    setComponents(prev => {
-      const filtered = prev.filter(comp => comp.id !== componentId);
-      return normalizeComponentLayers(filtered);
-    });
-    if (selectedComponentId === componentId) {
+    const idsToDelete = getDescendantIds(components, componentId);
+    if (selectedComponentId && idsToDelete.has(selectedComponentId)) {
       setSelectedComponentId(null);
     }
+    setComponents(prev => {
+      const filtered = prev.filter(comp => !idsToDelete.has(comp.id));
+      return normalizeComponentLayers(filtered);
+    });
   };
-
-
 
   const handleSave = async () => {
     if (!pageId || !page) return;
@@ -453,6 +496,10 @@ const BuilderPage = () => {
     setActiveSidebarType(null);
     const { active, over, delta } = event;
 
+    if (!over) {
+      return;
+    }
+
     const isCanvasItem = active.data.current?.source === 'canvas';
     if (isCanvasItem) {
       setComponents(prev => {
@@ -463,12 +510,29 @@ const BuilderPage = () => {
           return prev;
         }
 
-        const defaultLayout = DEFAULT_LAYOUTS[activeComponent.type] ?? { width: 300, height: 60 };
-        const width = activeComponent.layout?.width ?? defaultLayout.width;
-        const height = activeComponent.layout?.height ?? defaultLayout.height;
+        const width = activeComponent.layout?.width ?? 300;
+        const height = activeComponent.layout?.height ?? 60;
 
-        const nextX = clamp((activeComponent.layout?.x ?? 0) + delta.x, 0, CANVAS_WIDTH - width);
-        const nextY = clamp((activeComponent.layout?.y ?? 0) + delta.y, 0, CANVAS_HEIGHT - height);
+        let maxWidth = CANVAS_WIDTH;
+        let maxHeight = CANVAS_HEIGHT;
+
+        if (activeComponent.parentId) {
+          const parentContainer = prev.find(c => c.id === activeComponent.parentId);
+          if (parentContainer) {
+            const borderWidth = typeof parentContainer.style?.borderWidth === 'number' 
+              ? Math.max(0, parentContainer.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+            const { innerWidth, innerHeight } = getContainerInnerDimensions(
+              parentContainer.layout?.width ?? 300,
+              parentContainer.layout?.height ?? 60,
+              borderWidth
+            );
+            maxWidth = innerWidth;
+            maxHeight = innerHeight;
+          }
+        }
+
+        const nextX = clamp((activeComponent.layout?.x ?? 0) + delta.x, 0, Math.max(0, maxWidth - width));
+        const nextY = clamp((activeComponent.layout?.y ?? 0) + delta.y, 0, Math.max(0, maxHeight - height));
 
         const movedComponents = prev.map(comp =>
           comp.id === activeComponentId
@@ -488,39 +552,65 @@ const BuilderPage = () => {
       return;
     }
 
-    if (!over) {
-      return;
-    }
-
-    const isDroppedOnCanvas = over.id === 'builder-canvas' || over.data.current?.source === 'canvas';
     const isSidebarItem = active.data.current?.source === 'sidebar';
-
-    if (isSidebarItem && isDroppedOnCanvas && canvasRef.current) {
+    if (isSidebarItem) {
       const type = active.data.current?.componentType;
-      if (isValidComponentType(type)) {
-        const canvasRect = canvasRef.current.getBoundingClientRect();
-        
-        let initialX = 24;
-        let initialY = 24;
-        
-        if (active.rect.current.translated) {
+      if (!isValidComponentType(type)) return;
+
+      const defaultLayout = DEFAULT_LAYOUTS[type] ?? { width: 300, height: 60 };
+      
+      const dropType = over.data.current?.dropType;
+      
+      let initialX = 24;
+      let initialY = 24;
+      let parentId: string | null = null;
+      let maxWidth = CANVAS_WIDTH;
+      let maxHeight = CANVAS_HEIGHT;
+      
+      if (dropType === 'container' && over.data.current?.containerId && type !== 'Container') {
+        const containerId = over.data.current.containerId;
+        const container = components.find(c => c.id === containerId);
+        if (container) {
+          const borderWidth = typeof container.style?.borderWidth === 'number' 
+              ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+          const { innerWidth, innerHeight } = getContainerInnerDimensions(
+            container.layout?.width ?? 300,
+            container.layout?.height ?? 60,
+            borderWidth
+          );
+          
+          if (defaultLayout.width > innerWidth || defaultLayout.height > innerHeight) {
+            return;
+          }
+          
+          parentId = containerId;
+          maxWidth = innerWidth;
+          maxHeight = innerHeight;
+          
+          if (active.rect.current.translated && over.rect) {
+            initialX = active.rect.current.translated.left - over.rect.left;
+            initialY = active.rect.current.translated.top - over.rect.top;
+          }
+        }
+      } else {
+        if (canvasRef.current && active.rect.current.translated) {
+          const canvasRect = canvasRef.current.getBoundingClientRect();
           initialX = active.rect.current.translated.left - canvasRect.left;
           initialY = active.rect.current.translated.top - canvasRect.top;
         }
-
-        const defaultLayout = DEFAULT_LAYOUTS[type] ?? { width: 300, height: 60 };
-        initialX = clamp(initialX, 0, CANVAS_WIDTH - defaultLayout.width);
-        initialY = clamp(initialY, 0, CANVAS_HEIGHT - defaultLayout.height);
-
-        const newComponent = createBuilderComponent(type, initialX, initialY);
-        setComponents(prev => {
-          const nextZIndex = getHighestZIndex(prev) + 1;
-          newComponent.layout = { ...newComponent.layout, zIndex: nextZIndex };
-          return [...prev, newComponent];
-        });
-        setSelectedComponentId(newComponent.id);
       }
-      return;
+
+      initialX = clamp(initialX, 0, Math.max(0, maxWidth - defaultLayout.width));
+      initialY = clamp(initialY, 0, Math.max(0, maxHeight - defaultLayout.height));
+
+      const newComponent = createBuilderComponent(type, initialX, initialY, undefined, parentId);
+      
+      setComponents(prev => {
+        const nextZIndex = getHighestZIndex(prev, parentId) + 1;
+        newComponent.layout = { ...newComponent.layout, zIndex: nextZIndex };
+        return [...prev, newComponent];
+      });
+      setSelectedComponentId(newComponent.id);
     }
   };
 
@@ -545,7 +635,7 @@ const BuilderPage = () => {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
