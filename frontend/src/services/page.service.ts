@@ -1,4 +1,4 @@
-import type { UiPage, CreatePageRequest, PageSchema } from '../types/page';
+import type { UiPage, CreatePageRequest, PageSchema, PageVersionListResponse } from '../types/page';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -136,5 +136,24 @@ export const pageService = {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || "Failed to delete page");
     }
+  },
+
+  getPageVersions: async (pageId: string, page = 1, limit = 20): Promise<PageVersionListResponse> => {
+    const url = new URL(`${API_URL}/pages/${pageId}/versions`);
+    url.searchParams.append("page", page.toString());
+    url.searchParams.append("limit", limit.toString());
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch page versions");
+    }
+
+    return response.json();
   }
 };
+

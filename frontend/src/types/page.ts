@@ -176,3 +176,35 @@ export interface CreatePageRequest {
   name: string;
   description?: string;
 }
+
+export type PageVersionReason =
+  | "initial"
+  | "legacy-baseline"
+  | "manual-save"
+  | "restore"
+  | "publication";
+
+export type PageVersionSummary = {
+  id: string;
+  versionNumber: number;
+  createdAt: string;
+  createdBy: {
+    id: string;
+    fullName: string;
+  } | null;
+  reason: PageVersionReason;
+  isCurrent: boolean;
+};
+
+export type PageVersionPagination = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+export type PageVersionListResponse = {
+  items: PageVersionSummary[];
+  pagination: PageVersionPagination;
+};
+

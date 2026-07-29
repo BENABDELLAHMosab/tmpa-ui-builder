@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Page from '../models/page.model';
 import PageVersion from '../models/pageVersion.model';
 import { generateContentHash, cloneJsonValue } from '../utils/contentHash';
@@ -308,6 +309,77 @@ export const publishPage = async (req: Request, res: Response): Promise<void> =>
 
     const updatedPage = await page.save();
     res.json(updatedPage);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
+
+function parsePositiveIntegerQuery(value: unknown, fallback: number, max?: number): number {
+  if (typeof value !== 'string') return fallback;
+  const parsed = parseInt(value, 10);
+  if (isNaN(parsed) || parsed < 1) return fallback;
+  if (max !== undefined && parsed > max) return max;
+  return parsed;
+}
+
+export const listPageVersions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      res.status(400).json({ error: "Invalid page ID" });
+      return;
+    }
+
+    const page = await Page.findById(req.params.id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    if (req.user?.role === "user-developer" && page.ownerId.toString() !== req.user.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    const pageQuery = parsePositiveIntegerQuery(req.query.page, 1);
+    const limitQuery = parsePositiveIntegerQuery(req.query.limit, 20, 100);
+    const skip = (pageQuery - 1) * limitQuery;
+
+    const [versions, totalItems] = await Promise.all([
+      PageVersion.find({ pageId: page._id })
+        .select("versionNumber createdAt createdBy reason")
+        .populate("createdBy", "fullName")
+        .sort({ versionNumber: -1 })
+        .skip(skip)
+        .limit(limitQuery)
+        .lean(),
+      PageVersion.countDocuments({ pageId: page._id })
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limitQuery);
+    
+    // If page is out of bounds (but greater than 1), it will just return empty items array which is fine.
+
+    const items = versions.map((v: any) => ({
+      id: v._id.toString(),
+      versionNumber: v.versionNumber,
+      createdAt: v.createdAt instanceof Date ? v.createdAt.toISOString() : new Date(v.createdAt).toISOString(),
+      createdBy: v.createdBy ? {
+        id: v.createdBy._id.toString(),
+        fullName: v.createdBy.fullName
+      } : null,
+      reason: v.reason,
+      isCurrent: v.versionNumber === ((typeof page.version === 'number' && page.version >= 1) ? page.version : 1)
+    }));
+
+    res.json({
+      items,
+      pagination: {
+        page: pageQuery,
+        limit: limitQuery,
+        totalItems,
+        totalPages
+      }
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
   }

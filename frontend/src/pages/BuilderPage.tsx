@@ -6,6 +6,7 @@ import BuilderHeader from '../components/builder/BuilderHeader';
 import ComponentSidebar from '../components/builder/ComponentSidebar';
 import BuilderCanvas from '../components/builder/BuilderCanvas';
 import PropertiesPanel from '../components/builder/PropertiesPanel';
+import HistoryPanel from '../components/builder/HistoryPanel';
 import ComponentRenderer from '../components/renderers/ComponentRenderer';
 import '../styles/builder.css';
 import {
@@ -337,6 +338,10 @@ const BuilderPage = () => {
   const [activeCanvasComponentId, setActiveCanvasComponentId] = useState<string | null>(null);
   const [dragTargetState, setDragTargetState] = useState<DragTargetState | null>(null);
   
+  type RightPanelMode = "properties" | "history";
+  const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("properties");
+  const [historyRefreshToken, setHistoryRefreshToken] = useState(0);
+  
   const [saving, setSaving] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
@@ -525,6 +530,7 @@ const BuilderPage = () => {
       });
       
       setPage(updatedPage);
+      setHistoryRefreshToken(prev => prev + 1);
       setSuccessMessage("Page saved successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
@@ -800,9 +806,11 @@ const BuilderPage = () => {
             onBack={() => navigate('/developer/dashboard')} 
             onSave={handleSave}
             onPreview={handlePreview}
+            onHistoryToggle={() => setRightPanelMode(prev => prev === 'history' ? 'properties' : 'history')}
             onSubmitForValidation={handleSubmitForValidation}
             submitting={submitting}
             saving={saving}
+            historyActive={rightPanelMode === 'history'}
           />
         )}
         
@@ -830,13 +838,22 @@ const BuilderPage = () => {
             dragTargetState={dragTargetState}
           />
           
-          <PropertiesPanel 
-            selectedComponent={selectedComponent}
-            onUpdateProps={handleUpdateComponent}
-            onUpdateStyle={handleUpdateComponentStyle}
-            onUpdateLayout={handleUpdateComponentLayout}
-            onDelete={handleDeleteComponent}
-          />
+          {rightPanelMode === 'properties' ? (
+            <PropertiesPanel 
+              selectedComponent={selectedComponent}
+              onUpdateProps={handleUpdateComponent}
+              onUpdateStyle={handleUpdateComponentStyle}
+              onUpdateLayout={handleUpdateComponentLayout}
+              onDelete={handleDeleteComponent}
+            />
+          ) : (
+            <HistoryPanel
+              pageId={pageId!}
+              isOpen={rightPanelMode === 'history'}
+              refreshToken={historyRefreshToken}
+              onClose={() => setRightPanelMode('properties')}
+            />
+          )}
         </div>
       </div>
       {createPortal(

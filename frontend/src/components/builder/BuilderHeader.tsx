@@ -6,12 +6,14 @@ interface BuilderHeaderProps {
   onBack: () => void;
   onSave: () => void;
   onPreview: () => void;
+  onHistoryToggle: () => void;
   onSubmitForValidation: () => void;
   submitting: boolean;
   saving: boolean;
+  historyActive: boolean;
 }
 
-const BuilderHeader = ({ page, onBack, onSave, onPreview, onSubmitForValidation, submitting, saving }: BuilderHeaderProps) => {
+const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSubmitForValidation, submitting, saving, historyActive }: BuilderHeaderProps) => {
   return (
     <header className="builder-header">
       <div className="builder-header-info">
@@ -36,6 +38,18 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onSubmitForValidation,
             {submitting ? 'Submitting...' : 'Submit'}
           </button>
         )}
+        <button
+          className="btn"
+          onClick={onHistoryToggle}
+          aria-label="View page history"
+          style={{
+            backgroundColor: historyActive ? 'var(--navy-700)' : 'var(--surface-primary)',
+            color: historyActive ? 'white' : 'var(--text-primary)',
+            border: '1px solid var(--border-primary)'
+          }}
+        >
+          History
+        </button>
         <button
           className="btn"
           onClick={onPreview}
