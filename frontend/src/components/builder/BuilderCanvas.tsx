@@ -105,7 +105,7 @@ const DraggableCanvasItem = ({
     top: comp.layout?.y ?? 0,
     width: comp.layout?.width ?? 300,
     height: comp.layout?.height ?? 60,
-    transform: CSS.Translate.toString(transform),
+    transform: isDragging ? undefined : CSS.Translate.toString(transform),
     zIndex: displayedZIndex,
     padding: 0,
     border: isSelected ? '2px solid var(--color-secondary)' : '2px solid transparent',
@@ -114,7 +114,8 @@ const DraggableCanvasItem = ({
     transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s',
     boxSizing: 'border-box',
     overflow: 'hidden',
-    pointerEvents: 'auto'
+    pointerEvents: 'auto',
+    opacity: isDragging ? 0.3 : 1
   };
 
   return (
@@ -186,7 +187,8 @@ const DraggableContainerItem = ({
     id: `container-drop-${comp.id}`,
     data: {
       dropType: 'container',
-      containerId: comp.id
+      containerId: comp.id,
+      zIndex: comp.layout?.zIndex ?? 1
     }
   });
 
