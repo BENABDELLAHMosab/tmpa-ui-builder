@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import Page from '../models/page.model';
 import PageVersion from '../models/pageVersion.model';
 import { generateContentHash, cloneJsonValue } from '../utils/contentHash';
@@ -324,7 +324,7 @@ function parsePositiveIntegerQuery(value: unknown, fallback: number, max?: numbe
 
 export const listPageVersions = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ error: "Invalid page ID" });
       return;
     }
@@ -380,6 +380,77 @@ export const listPageVersions = async (req: Request, res: Response): Promise<voi
         totalPages
       }
     });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
+
+export function parseStrictVersionNumber(value: unknown): number | null {
+  if (typeof value !== 'string') return null;
+  if (!/^[1-9]\d*$/.test(value)) return null;
+  const num = Number(value);
+  if (!Number.isSafeInteger(num) || num < 1) return null;
+  return num;
+}
+
+export const getPageVersion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id, versionNumber } = req.params;
+
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json({ error: "Invalid page ID format" });
+      return;
+    }
+
+    const parsedVersion = parseStrictVersionNumber(versionNumber);
+    if (parsedVersion === null) {
+      res.status(400).json({ error: "Invalid version number" });
+      return;
+    }
+
+    const page = await Page.findById(id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    const user = req.user as any;
+    if (user.role === 'user-developer' && page.ownerId.toString() !== user.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    const version = await PageVersion.findOne({
+      pageId: page._id,
+      versionNumber: parsedVersion
+    })
+      .select("pageId versionNumber schemaSnapshot createdAt createdBy reason")
+      .populate("createdBy", "fullName")
+      .lean() as any;
+
+    if (!version) {
+      res.status(404).json({ error: "Page version not found" });
+      return;
+    }
+
+    const currentVersionNumber = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
+
+    const dto = {
+      id: version._id.toString(),
+      pageId: version.pageId.toString(),
+      pageName: page.name,
+      versionNumber: version.versionNumber,
+      schemaSnapshot: version.schemaSnapshot,
+      createdAt: version.createdAt instanceof Date ? version.createdAt.toISOString() : new Date(version.createdAt).toISOString(),
+      createdBy: version.createdBy ? {
+        id: version.createdBy._id.toString(),
+        fullName: version.createdBy.fullName
+      } : null,
+      reason: version.reason,
+      isCurrent: version.versionNumber === currentVersionNumber
+    };
+
+    res.json(dto);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
   }

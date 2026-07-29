@@ -208,3 +208,17 @@ export type PageVersionListResponse = {
   pagination: PageVersionPagination;
 };
 
+export type PageVersionDetail = {
+  id: string;
+  pageId: string;
+  pageName: string;
+  versionNumber: number;
+  schemaSnapshot: PageSchema;
+  createdAt: string;
+  createdBy: {
+    id: string;
+    fullName: string;
+  } | null;
+  reason: PageVersionReason;
+  isCurrent: boolean;
+};

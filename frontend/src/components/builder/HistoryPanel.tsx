@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { pageService } from '../../services/page.service';
-import type { PageVersionSummary, PageVersionReason } from '../../types/page';
+import type { PageVersionSummary } from '../../types/page';
 
 type HistoryPanelProps = {
   pageId: string;
@@ -9,27 +9,7 @@ type HistoryPanelProps = {
   onClose: () => void;
 };
 
-const getPageVersionReasonLabel = (reason: PageVersionReason): string => {
-  const map: Record<PageVersionReason, string> = {
-    "initial": "Initial version",
-    "legacy-baseline": "Imported baseline",
-    "manual-save": "Manual save",
-    "restore": "Restored version",
-    "publication": "Publication"
-  };
-  return map[reason] || "Unknown change";
-};
-
-const formatDate = (isoDate: string): string => {
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short"
-    }).format(new Date(isoDate));
-  } catch {
-    return "Unknown date";
-  }
-};
+import { getPageVersionReasonLabel, formatDate } from '../../utils/format';
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ pageId, isOpen, refreshToken, onClose }) => {
   const [items, setItems] = useState<PageVersionSummary[]>([]);
@@ -73,14 +53,47 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ pageId, isOpen, refreshToke
 
   return (
     <div className="builder-right-panel history-panel">
-      <div className="properties-panel-header">
-        <h3>History</h3>
-        <button className="btn-icon" onClick={onClose} aria-label="Close History">
-          &times;
+      <div className="history-panel__header" style={{ 
+        padding: '1rem', 
+        borderBottom: '1px solid var(--border-primary)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        backgroundColor: 'var(--surface-primary)', 
+        position: 'sticky', 
+        top: 0, 
+        zIndex: 10 
+      }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 600 }}>History</h3>
+        <button 
+          type="button" 
+          onClick={onClose} 
+          aria-label="Back to properties"
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem', 
+            background: 'transparent', 
+            border: 'none', 
+            color: 'var(--navy-600)', 
+            cursor: 'pointer',
+            padding: '0.25rem 0.5rem',
+            borderRadius: '4px',
+            fontSize: '0.85rem',
+            fontWeight: 500,
+            transition: 'background-color 0.2s ease'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(23, 54, 93, 0.05)'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <span>Properties</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </button>
       </div>
 
-      <div className="history-panel-content">
+      <div className="history-panel__content" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
         {loading && <div className="history-loading">Loading...</div>}
         
         {error && !loading && (
@@ -104,8 +117,18 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ pageId, isOpen, refreshToke
                 </div>
                 <div className="history-item-reason">{getPageVersionReasonLabel(item.reason)}</div>
                 <div className="history-item-date">{formatDate(item.createdAt)}</div>
-                <div className="history-item-author">
-                  {item.createdBy?.fullName || "Unknown user"}
+                <div className="history-item-author" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>{item.createdBy?.fullName || "Unknown user"}</span>
+                  <a
+                    href={`/pages/${pageId}/versions/${item.versionNumber}/preview`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`View version ${item.versionNumber}`}
+                    className="btn btn-sm"
+                    style={{ textDecoration: 'none', display: 'inline-block', backgroundColor: 'var(--navy-800)', color: 'white', border: 'none' }}
+                  >
+                    View
+                  </a>
                 </div>
               </div>
             ))}
@@ -114,7 +137,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ pageId, isOpen, refreshToke
       </div>
 
       {totalPages > 0 && (
-        <div className="history-pagination">
+        <div className="history-panel__pagination" style={{ flexShrink: 0, padding: '1rem', borderTop: '1px solid var(--border-primary)', backgroundColor: 'var(--surface-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button 
             className="btn btn-sm" 
             disabled={currentPage <= 1 || loading}

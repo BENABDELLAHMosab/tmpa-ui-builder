@@ -39,14 +39,10 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
           </button>
         )}
         <button
-          className="btn"
+          className={`btn builder-history-button ${historyActive ? 'builder-history-button--active' : ''}`}
           onClick={onHistoryToggle}
           aria-label="View page history"
-          style={{
-            backgroundColor: historyActive ? 'var(--navy-700)' : 'var(--surface-primary)',
-            color: historyActive ? 'white' : 'var(--text-primary)',
-            border: '1px solid var(--border-primary)'
-          }}
+          aria-pressed={historyActive}
         >
           History
         </button>

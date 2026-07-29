@@ -52,6 +52,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/pages/:pageId/versions/:versionNumber/preview" 
+        element={
+          <ProtectedRoute allowedRoles={["user-developer", "admin"]}>
+            <PreviewPage />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

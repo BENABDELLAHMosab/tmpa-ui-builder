@@ -1,4 +1,4 @@
-import type { UiPage, CreatePageRequest, PageSchema, PageVersionListResponse } from '../types/page';
+import type { UiPage, CreatePageRequest, PageSchema, PageVersionListResponse, PageVersionDetail } from '../types/page';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -154,6 +154,21 @@ export const pageService = {
     }
 
     return response.json();
+  },
+
+  getPageVersion: async (pageId: string, versionNumber: number): Promise<PageVersionDetail> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/versions/${versionNumber}`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to load this page version");
+    }
+
+    return response.json();
   }
 };
+
 
