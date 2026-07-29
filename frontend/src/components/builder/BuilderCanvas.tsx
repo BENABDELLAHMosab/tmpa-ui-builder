@@ -7,6 +7,7 @@ import ContainerFrame from '../renderers/ContainerFrame';
 import { clamp, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../../utils/canvas';
 import { getHighestZIndex } from '../../utils/layers';
 import { buildComponentsByParent, getContainerInnerDimensions, CONTAINER_STYLE_DEFAULTS } from '../../utils/container';
+import type { DragTargetState } from '../../utils/container';
 import '../../styles/builder.css';
 
 interface DraggableCanvasItemProps {
@@ -155,6 +156,7 @@ interface DraggableContainerItemProps extends DraggableCanvasItemProps {
   childrenComponents: BuilderComponent[];
   isChildSelected: boolean;
   globalSelectedComponentId: string | null;
+  dragTargetState: DragTargetState | null;
 }
 
 const DraggableContainerItem = ({
@@ -167,7 +169,8 @@ const DraggableContainerItem = ({
   maxWidth,
   maxHeight,
   isChildSelected,
-  globalSelectedComponentId
+  globalSelectedComponentId,
+  dragTargetState
 }: DraggableContainerItemProps) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
@@ -309,7 +312,11 @@ const DraggableContainerItem = ({
       
       <div
         ref={setDroppableNodeRef}
-        className={`container-content-layer ${isOver ? 'drag-over-container' : ''}`}
+        className={`container-content-layer ${isOver ? 'drag-over-container' : ''} ${
+          dragTargetState?.containerId === comp.id 
+            ? (dragTargetState.status === 'valid' ? 'container-drop-target--valid' : 'container-drop-target--invalid')
+            : ''
+        }`}
         style={{
           position: 'absolute',
           top: borderWidth,
@@ -370,9 +377,10 @@ interface BuilderCanvasProps {
   onSelectComponent: (componentId: string) => void;
   onResizeComponent: (componentId: string, dimensions: { width: number; height: number }) => void;
   canvasRef: React.RefObject<HTMLDivElement | null>;
+  dragTargetState: DragTargetState | null;
 }
 
-const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onResizeComponent, canvasRef }: BuilderCanvasProps) => {
+const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onResizeComponent, canvasRef, dragTargetState }: BuilderCanvasProps) => {
   const hasComponents = components.length > 0;
   const interactionZIndex = getHighestZIndex(components) + 1;
   
@@ -435,6 +443,7 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
                   onResizeComponent={onResizeComponent}
                   maxWidth={CANVAS_WIDTH - (comp.layout?.x ?? 0)}
                   maxHeight={CANVAS_HEIGHT - (comp.layout?.y ?? 0)}
+                  dragTargetState={dragTargetState}
                 />
               );
             }
