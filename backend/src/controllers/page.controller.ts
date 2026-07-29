@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import Page from '../models/page.model';
+import PageVersion from '../models/pageVersion.model';
+import { generateContentHash, cloneJsonValue } from '../utils/contentHash';
 
 export const createPage = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -9,16 +11,37 @@ export const createPage = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    const schema = { components: [] };
+    const contentHash = generateContentHash(schema);
+
     const newPage = new Page({
       name,
       description,
       ownerId: req.user?.id,
       status: "draft",
-      schema: { components: [] },
-      version: 1
+      schema,
+      version: 1,
+      contentHash
     });
 
     const savedPage = await newPage.save();
+
+    try {
+      await PageVersion.create({
+        pageId: savedPage._id,
+        versionNumber: 1,
+        schemaSnapshot: cloneJsonValue(schema),
+        contentHash,
+        createdBy: req.user?.id,
+        reason: "initial"
+      });
+    } catch (err: any) {
+      await savedPage.deleteOne();
+      console.error("Failed to create initial PageVersion, rolling back page creation:", err);
+      res.status(500).json({ error: "Failed to create page version" });
+      return;
+    }
+
     res.status(201).json(savedPage);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
@@ -69,15 +92,89 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { name, description, schema } = req.body;
-    if (name !== undefined) page.name = name;
-    if (description !== undefined) page.description = description;
-    if (schema !== undefined) {
-      page.schema = schema;
-      page.markModified('schema'); // Mark as modified for Mixed type
+    const { name, description, schema: incomingSchema } = req.body;
+    let schemaChanged = false;
+    let incomingHash = "";
+
+    if (incomingSchema !== undefined) {
+      incomingHash = generateContentHash(incomingSchema);
+      const currentHash = page.contentHash || generateContentHash(page.schema);
+      if (incomingHash !== currentHash) {
+        schemaChanged = true;
+      }
     }
 
-    const updatedPage = await page.save();
+    if (!schemaChanged) {
+      if (name !== undefined) page.name = name;
+      if (description !== undefined) page.description = description;
+      if (incomingSchema !== undefined && !page.contentHash) {
+         page.contentHash = incomingHash;
+      }
+      
+      await page.save();
+      res.json(page);
+      return;
+    }
+
+    const versionCount = await PageVersion.countDocuments({ pageId: page._id });
+    if (versionCount === 0) {
+      const currentHash = page.contentHash || generateContentHash(page.schema);
+      const baselineVersionNumber = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
+      
+      try {
+        await PageVersion.create({
+          pageId: page._id,
+          versionNumber: baselineVersionNumber,
+          schemaSnapshot: cloneJsonValue(page.schema),
+          contentHash: currentHash,
+          createdBy: req.user?.id,
+          reason: "legacy-baseline"
+        });
+      } catch (err: any) {
+        if (err.code !== 11000) {
+          throw err;
+        }
+      }
+    }
+
+    const currentVersion = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
+    const nextVersion = currentVersion + 1;
+
+    let tempVersion;
+    try {
+      tempVersion = await PageVersion.create({
+        pageId: page._id,
+        versionNumber: nextVersion,
+        schemaSnapshot: cloneJsonValue(incomingSchema),
+        contentHash: incomingHash,
+        createdBy: req.user?.id,
+        reason: "manual-save"
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to create provisional snapshot" });
+      return;
+    }
+
+    const updatedPage = await Page.findOneAndUpdate(
+      { _id: page._id, version: currentVersion },
+      {
+        $set: {
+          schema: incomingSchema,
+          contentHash: incomingHash,
+          ...(name !== undefined ? { name } : {}),
+          ...(description !== undefined ? { description } : {})
+        },
+        $inc: { version: 1 }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedPage) {
+      await PageVersion.findByIdAndDelete(tempVersion._id);
+      res.status(409).json({ error: "Conflict: The page was modified by another request. Please reload." });
+      return;
+    }
+
     res.json(updatedPage);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
@@ -97,6 +194,7 @@ export const deletePage = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    await PageVersion.deleteMany({ pageId: page._id });
     await page.deleteOne();
     res.json({ message: "Page deleted successfully" });
   } catch (error: any) {

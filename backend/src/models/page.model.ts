@@ -12,6 +12,7 @@ export interface IPage extends Omit<Document, 'schema'> {
   rejectionReason?: string;
   publishedBy?: mongoose.Types.ObjectId;
   publishedAt?: Date;
+  contentHash?: string;
 }
 
 const pageSchema: Schema = new Schema(
@@ -30,7 +31,8 @@ const pageSchema: Schema = new Schema(
     publishedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     publishedAt: { type: Date },
     schema: { type: Schema.Types.Mixed, default: { components: [] } },
-    version: { type: Number, default: 1 }
+    version: { type: Number, default: 1 },
+    contentHash: { type: String }
   },
   { timestamps: true }
 );
