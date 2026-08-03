@@ -166,3 +166,18 @@
   font-weight: 600;
   color: var(--color-muted);
 }
+
+/* Interactive Preview Items & Containers */
+.preview-layout .preview-item-wrapper,
+.preview-layout .preview-renderer-item,
+.preview-layout .preview-container-children {
+  pointer-events: auto;
+}
+
+.preview-layout .preview-container-children input,
+.preview-layout .preview-container-children button,
+.preview-layout .preview-container-children textarea,
+.preview-layout .preview-container-children select,
+.preview-layout .preview-container-children label {
+  pointer-events: auto;
+}

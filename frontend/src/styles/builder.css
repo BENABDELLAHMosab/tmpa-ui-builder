@@ -533,6 +533,22 @@
   pointer-events: none; /* frame non interactive */
 }
 
+/* Preview mode: re-enable pointer-events on the container and all descendants */
+.container-outer-frame--preview {
+  pointer-events: auto;
+}
+
+.container-outer-frame--preview .container-inner-content,
+.container-outer-frame--preview .preview-container-children,
+.container-outer-frame--preview .preview-item-wrapper,
+.container-outer-frame--preview input,
+.container-outer-frame--preview button,
+.container-outer-frame--preview textarea,
+.container-outer-frame--preview select,
+.container-outer-frame--preview label {
+  pointer-events: auto;
+}
+
 .container-drag-surface {
   pointer-events: auto; /* drag surface interactive */
   cursor: grab;

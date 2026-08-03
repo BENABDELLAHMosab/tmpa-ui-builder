@@ -35,7 +35,7 @@ const PreviewRenderer = ({ components }: PreviewRendererProps) => {
     return (
       <div 
         key={comp.id} 
-        className="preview-item-wrapper"
+        className="preview-item-wrapper preview-renderer-item"
         style={{
           position: 'absolute',
           left: comp.layout?.x ?? 0,
@@ -44,11 +44,22 @@ const PreviewRenderer = ({ components }: PreviewRendererProps) => {
           height: comp.layout?.height ?? 60,
           zIndex: comp.layout?.zIndex ?? 1,
           boxSizing: 'border-box',
+          pointerEvents: 'auto',
         }}
       >
         {isContainer ? (
-          <ContainerFrame component={comp}>
-            {children.map(renderComponent)}
+          <ContainerFrame component={comp} mode="preview">
+            <div
+              className="preview-container-children"
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'auto',
+              }}
+            >
+              {children.map(renderComponent)}
+            </div>
           </ContainerFrame>
         ) : (
           <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>

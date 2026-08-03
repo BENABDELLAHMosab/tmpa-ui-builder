@@ -6,9 +6,10 @@ interface ContainerFrameProps {
   component: BuilderComponent;
   children?: React.ReactNode;
   contentRef?: React.Ref<HTMLDivElement>;
+  mode?: 'builder' | 'preview';
 }
 
-const ContainerFrame = ({ component, children, contentRef }: ContainerFrameProps) => {
+const ContainerFrame = ({ component, children, contentRef, mode = 'builder' }: ContainerFrameProps) => {
   const style = component.style || {};
   const backgroundColor = style.backgroundColor ?? CONTAINER_STYLE_DEFAULTS.backgroundColor;
   const borderColor = style.borderColor ?? CONTAINER_STYLE_DEFAULTS.borderColor;
@@ -16,9 +17,11 @@ const ContainerFrame = ({ component, children, contentRef }: ContainerFrameProps
   const borderStyle = style.borderStyle ?? CONTAINER_STYLE_DEFAULTS.borderStyle;
   const borderRadius = style.borderRadius ?? CONTAINER_STYLE_DEFAULTS.borderRadius;
 
+  const isPreview = mode === 'preview';
+
   return (
     <div
-      className="container-outer-frame"
+      className={`container-outer-frame${isPreview ? ' container-outer-frame--preview' : ''}`}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -42,7 +45,8 @@ const ContainerFrame = ({ component, children, contentRef }: ContainerFrameProps
           position: 'relative',
           flex: 1,
           minWidth: 0,
-          minHeight: 0
+          minHeight: 0,
+          ...(isPreview ? { pointerEvents: 'auto' } : {}),
         }}
       >
         {children}
