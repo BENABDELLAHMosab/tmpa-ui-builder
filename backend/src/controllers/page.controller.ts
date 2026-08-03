@@ -455,3 +455,116 @@ export const getPageVersion = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
+
+export const restorePageVersion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { pageId, versionNumber: versionNumberParam } = req.params;
+
+    if (!Types.ObjectId.isValid(pageId)) {
+      res.status(400).json({ error: "Invalid page ID format" });
+      return;
+    }
+
+    const parsedVersion = parseStrictVersionNumber(versionNumberParam);
+    if (parsedVersion === null) {
+      res.status(400).json({ error: "Invalid version number" });
+      return;
+    }
+
+    const { expectedVersion } = req.body;
+    if (typeof expectedVersion !== 'number' || !Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      res.status(400).json({ error: "expectedVersion must be a positive integer" });
+      return;
+    }
+
+    const page = await Page.findById(pageId);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    const user = req.user as { id: string; role: string };
+    if (user.role === 'user-developer' && page.ownerId.toString() !== user.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    const targetVersion = await PageVersion.findOne({
+      pageId: page._id,
+      versionNumber: parsedVersion
+    }).lean() as any;
+
+    if (!targetVersion) {
+      res.status(404).json({ error: "Page version not found" });
+      return;
+    }
+
+    const allowedStatuses = ['draft', 'rejected'];
+    if (!allowedStatuses.includes(page.status)) {
+      res.status(409).json({
+        error: `Cannot restore a version when the page status is '${page.status}'. Only draft or rejected pages can be restored.`
+      });
+      return;
+    }
+
+    const restoredSnapshot = cloneJsonValue(targetVersion.schemaSnapshot);
+    const restoredHash = generateContentHash(restoredSnapshot);
+
+    const currentHash = page.contentHash || generateContentHash(page.schema);
+    if (restoredHash === currentHash) {
+      res.status(409).json({ error: "The selected version is identical to the current content. No restore needed." });
+      return;
+    }
+
+    const currentVersion = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
+    if (currentVersion !== expectedVersion) {
+      res.status(409).json({ error: "Conflict: The page was modified by another request. Please reload." });
+      return;
+    }
+
+    const nextVersion = currentVersion + 1;
+
+    let tempVersion: any;
+    try {
+      tempVersion = await PageVersion.create({
+        pageId: page._id,
+        versionNumber: nextVersion,
+        schemaSnapshot: restoredSnapshot,
+        contentHash: restoredHash,
+        createdBy: user.id,
+        reason: "restore"
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to create restore snapshot" });
+      return;
+    }
+
+    const updateFields: Record<string, unknown> = {
+      schema: restoredSnapshot,
+      contentHash: restoredHash,
+      status: 'draft'
+    };
+    if ('rejectionReason' in page) {
+      updateFields.rejectionReason = "";
+    }
+
+    const updatedPage = await Page.findOneAndUpdate(
+      { _id: page._id, version: currentVersion },
+      {
+        $set: updateFields,
+        $inc: { version: 1 }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedPage) {
+      await PageVersion.findByIdAndDelete(tempVersion._id);
+      res.status(409).json({ error: "Conflict: The page was modified by another request. Please reload." });
+      return;
+    }
+
+    res.json(updatedPage);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};

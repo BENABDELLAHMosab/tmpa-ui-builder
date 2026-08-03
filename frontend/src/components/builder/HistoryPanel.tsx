@@ -1,23 +1,40 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { pageService } from '../../services/page.service';
-import type { PageVersionSummary } from '../../types/page';
+import type { PageStatus, PageVersionSummary } from '../../types/page';
 
 type HistoryPanelProps = {
   pageId: string;
   isOpen: boolean;
   refreshToken: number;
+  pageStatus: PageStatus;
+  currentVersion: number;
+  onRestore: (versionNumber: number) => Promise<void>;
   onClose: () => void;
 };
 
 import { getPageVersionReasonLabel, formatDate } from '../../utils/format';
 
-const HistoryPanel: React.FC<HistoryPanelProps> = ({ pageId, isOpen, refreshToken, onClose }) => {
+const RESTORABLE_STATUSES: PageStatus[] = ['draft', 'rejected'];
+
+const HistoryPanel: React.FC<HistoryPanelProps> = ({
+  pageId,
+  isOpen,
+  refreshToken,
+  pageStatus,
+  currentVersion,
+  onRestore,
+  onClose
+}) => {
   const [items, setItems] = useState<PageVersionSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+
+  const [restoringVersionNumber, setRestoringVersionNumber] = useState<number | null>(null);
+
+  const canRestore = RESTORABLE_STATUSES.includes(pageStatus);
 
   const fetchVersions = useCallback(async (pageToFetch: number) => {
     setLoading(true);
@@ -48,6 +65,20 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ pageId, isOpen, refreshToke
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  const handleRestoreClick = async (versionNumber: number) => {
+    if (restoringVersionNumber !== null) return;
+    const confirmed = window.confirm(
+      `Restore version ${versionNumber}? A new version will be created with its content.`
+    );
+    if (!confirmed) return;
+    setRestoringVersionNumber(versionNumber);
+    try {
+      await onRestore(versionNumber);
+    } finally {
+      setRestoringVersionNumber(null);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -109,29 +140,47 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ pageId, isOpen, refreshToke
 
         {!loading && !error && items.length > 0 && (
           <div className="history-list">
-            {items.map(item => (
-              <div key={item.id} className="history-item">
-                <div className="history-item-header">
-                  <span className="history-item-version">Version {item.versionNumber}</span>
-                  {item.isCurrent && <span className="history-item-current">Current</span>}
+            {items.map(item => {
+              const isCurrentVersion = item.versionNumber === currentVersion;
+              const isRestoring = restoringVersionNumber === item.versionNumber;
+              const showRestore = canRestore && !isCurrentVersion;
+
+              return (
+                <div key={item.id} className="history-item">
+                  <div className="history-item-header">
+                    <span className="history-item-version">Version {item.versionNumber}</span>
+                    {isCurrentVersion && <span className="history-item-current">Current</span>}
+                  </div>
+                  <div className="history-item-reason">{getPageVersionReasonLabel(item.reason)}</div>
+                  <div className="history-item-date">{formatDate(item.createdAt)}</div>
+                  <div className="history-item-author" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    {item.createdBy?.fullName || "Unknown user"}
+                  </div>
+                  <div className="history-version-actions">
+                      {showRestore && (
+                        <button
+                          type="button"
+                          className="history-version-action history-version-action--restore"
+                          disabled={isRestoring || restoringVersionNumber !== null}
+                          onClick={() => handleRestoreClick(item.versionNumber)}
+                          aria-label={`Restore version ${item.versionNumber}`}
+                        >
+                          {isRestoring ? 'Restoring…' : 'Restore'}
+                        </button>
+                      )}
+                      <a
+                        href={`/pages/${pageId}/versions/${item.versionNumber}/preview`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`View version ${item.versionNumber}`}
+                        className="history-version-action history-version-action--view"
+                      >
+                        View
+                      </a>
+                  </div>
                 </div>
-                <div className="history-item-reason">{getPageVersionReasonLabel(item.reason)}</div>
-                <div className="history-item-date">{formatDate(item.createdAt)}</div>
-                <div className="history-item-author" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{item.createdBy?.fullName || "Unknown user"}</span>
-                  <a
-                    href={`/pages/${pageId}/versions/${item.versionNumber}/preview`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`View version ${item.versionNumber}`}
-                    className="btn btn-sm"
-                    style={{ textDecoration: 'none', display: 'inline-block', backgroundColor: 'var(--navy-800)', color: 'white', border: 'none' }}
-                  >
-                    View
-                  </a>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -160,3 +209,6 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ pageId, isOpen, refreshToke
 };
 
 export default HistoryPanel;
+
+
+

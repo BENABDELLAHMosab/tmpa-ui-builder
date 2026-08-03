@@ -669,3 +669,71 @@
   color: var(--text-secondary);
   font-weight: 500;
 }
+
+/* ── History panel version action buttons ───────────────────────────── */
+
+.history-version-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.history-version-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.history-version-action:focus-visible {
+  outline: 3px solid rgba(18, 54, 95, 0.25);
+  outline-offset: 2px;
+}
+
+.history-version-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* View – filled navy */
+.history-version-action--view {
+  background: #12365f;
+  border: 1px solid #12365f;
+  color: #ffffff;
+}
+
+.history-version-action--view:hover:not(:disabled) {
+  background: #0d2a4d;
+  border-color: #0d2a4d;
+}
+
+/* Restore – outlined navy, never white-on-white */
+.history-version-action--restore {
+  background: #ffffff;
+  border: 1px solid #12365f;
+  color: #12365f;
+}
+
+.history-version-action--restore:hover:not(:disabled) {
+  background: #e8eef6;
+  border-color: #0d2a4d;
+  color: #0d2a4d;
+}

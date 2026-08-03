@@ -168,6 +168,28 @@ export const pageService = {
     }
 
     return response.json();
+  },
+
+  restorePageVersion: async (
+    pageId: string,
+    versionNumber: number,
+    expectedVersion: number
+  ): Promise<UiPage> => {
+    const response = await fetch(
+      `${API_URL}/pages/${pageId}/versions/${versionNumber}/restore`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ expectedVersion }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to restore page version");
+    }
+
+    return response.json();
   }
 };
 

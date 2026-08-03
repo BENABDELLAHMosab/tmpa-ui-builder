@@ -517,6 +517,42 @@ const BuilderPage = () => {
     });
   };
 
+  const handleRestoreVersion = async (versionNumber: number) => {
+    if (!pageId || !page) return;
+    try {
+      setError(null);
+      const updatedPage = await pageService.restorePageVersion(
+        pageId,
+        versionNumber,
+        page.version
+      );
+      setPage(updatedPage);
+      const restoredComponents = (
+        Array.isArray(updatedPage.schema?.components)
+          ? updatedPage.schema.components
+          : []
+      ) as import('../types/page').BuilderComponent[];
+      setComponents(
+        normalizeComponentLayers(
+          normalizeContainerChildrenLayout(
+            normalizeComponentsLayout(
+              normalizeComponentParents(restoredComponents)
+            )
+          )
+        )
+      );
+      setSelectedComponentId(prev => {
+        if (prev && !restoredComponents.some(c => c.id === prev)) return null;
+        return prev;
+      });
+      setHistoryRefreshToken(prev => prev + 1);
+      setSuccessMessage(`Version ${versionNumber} restored successfully`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to restore page version");
+    }
+  };
+
   const handleSave = async () => {
     if (!pageId || !page) return;
 
@@ -851,6 +887,9 @@ const BuilderPage = () => {
               pageId={pageId!}
               isOpen={rightPanelMode === 'history'}
               refreshToken={historyRefreshToken}
+              pageStatus={page?.status ?? 'draft'}
+              currentVersion={page?.version ?? 1}
+              onRestore={handleRestoreVersion}
               onClose={() => setRightPanelMode('properties')}
             />
           )}
