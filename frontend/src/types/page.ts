@@ -170,6 +170,7 @@ export interface UiPage {
   rejectionReason?: string;
   publishedBy?: string | { _id: string; fullName: string; email?: string };
   publishedAt?: string;
+  publishedVersionNumber?: number;
 }
 
 export interface CreatePageRequest {

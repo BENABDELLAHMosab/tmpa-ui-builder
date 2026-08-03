@@ -292,6 +292,11 @@ export const rejectPage = async (req: Request, res: Response): Promise<void> => 
 
 export const publishPage = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!Types.ObjectId.isValid(req.params.id)) {
+      res.status(400).json({ error: "Invalid page ID format" });
+      return;
+    }
+
     const page = await Page.findById(req.params.id);
     if (!page) {
       res.status(404).json({ error: "Page not found" });
@@ -303,11 +308,38 @@ export const publishPage = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    page.status = "published";
-    page.publishedBy = req.user?.id as any;
-    page.publishedAt = new Date();
+    const currentVersion = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
 
-    const updatedPage = await page.save();
+    const snapshot = await PageVersion.findOne({
+      pageId: page._id,
+      versionNumber: currentVersion
+    }).lean();
+
+    if (!snapshot) {
+      res.status(409).json({
+        error: `Cannot publish: no version snapshot found for version ${currentVersion}.`
+      });
+      return;
+    }
+
+    const updatedPage = await Page.findOneAndUpdate(
+      { _id: page._id, status: "approved" },
+      {
+        $set: {
+          status: "published",
+          publishedVersionNumber: currentVersion,
+          publishedAt: new Date(),
+          publishedBy: req.user?.id
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedPage) {
+      res.status(409).json({ error: "Conflict: page status changed before publishing. Please reload." });
+      return;
+    }
+
     res.json(updatedPage);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
