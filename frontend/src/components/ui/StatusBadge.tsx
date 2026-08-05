@@ -11,9 +11,20 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
   let displayStatus = normalizedStatus;
 
   switch (normalizedStatus) {
+    case 'ACTIVE':
+      bgColor = 'var(--color-success-bg)';
+      color = 'var(--color-success)';
+      displayStatus = 'Active';
+      break;
+    case 'SUSPENDED':
+      bgColor = 'var(--color-danger-bg)';
+      color = 'var(--color-danger)';
+      displayStatus = 'Suspended';
+      break;
     case 'DRAFT':
       bgColor = 'var(--color-draft-bg)';
       color = 'var(--color-draft)';
+      displayStatus = 'DRAFT';
       break;
     case 'SUBMITTED':
     case 'PENDING':
@@ -24,14 +35,17 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
     case 'APPROVED':
       bgColor = 'var(--color-success-bg)';
       color = 'var(--color-success)';
+      displayStatus = 'APPROVED';
       break;
     case 'REJECTED':
       bgColor = 'var(--color-danger-bg)';
       color = 'var(--color-danger)';
+      displayStatus = 'REJECTED';
       break;
     case 'PUBLISHED':
       bgColor = 'var(--color-published-bg)';
       color = 'var(--color-published)';
+      displayStatus = 'PUBLISHED';
       break;
     default:
       break;

@@ -1,7 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import User from '../models/user.model';
 
-export const authenticateJWT = (req: Request, res: Response, next: NextFunction): void => {
+interface JwtPayload {
+  userId: string;
+  email: string;
+  role: string;
+}
+
+export const authenticateJWT = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -13,11 +20,36 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
   const secret = process.env.JWT_SECRET || 'fallback_secret';
 
   try {
-    const decoded = jwt.verify(token, secret) as any;
+    const decoded = jwt.verify(token, secret) as JwtPayload;
+    if (!decoded || !decoded.userId) {
+      res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
+      return;
+    }
+
+    const user = await User.findById(decoded.userId)
+      .select('_id email role accountStatus')
+      .lean();
+
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized: User no longer exists' });
+      return;
+    }
+
+    const accountStatus = user.accountStatus || 'active';
+
+    if (user.role === 'user-developer' && accountStatus === 'suspended') {
+      res.status(403).json({
+        code: 'ACCOUNT_SUSPENDED',
+        error: 'Votre compte est suspendu. Contactez l’administrateur.'
+      });
+      return;
+    }
+
     req.user = {
-      id: decoded.userId,
-      email: decoded.email,
-      role: decoded.role
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      accountStatus
     };
     next();
   } catch (error) {

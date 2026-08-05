@@ -1,10 +1,12 @@
 export type UserRole = "admin" | "user-developer";
+export type AccountStatus = "active" | "suspended";
 
 export interface AuthUser {
   id: string;
   fullName: string;
   email: string;
   role: UserRole;
+  accountStatus?: AccountStatus;
 }
 
 export interface LoginRequest {
@@ -28,10 +30,21 @@ export interface CreatedDeveloper {
   fullName: string;
   email: string;
   role: UserRole;
+  accountStatus?: AccountStatus;
   createdAt: string;
 }
 
 export interface CreateDeveloperResponse {
   message: string;
   user: CreatedDeveloper;
+}
+
+export interface DeveloperAccount {
+  id: string;
+  fullName: string;
+  email: string;
+  role: "user-developer";
+  accountStatus: AccountStatus;
+  createdAt: string;
+  updatedAt?: string;
 }

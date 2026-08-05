@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { AccountStatus } from '../models/user.model';
 
 declare global {
   namespace Express {
@@ -7,6 +8,7 @@ declare global {
         id: string;
         email: string;
         role: string;
+        accountStatus?: AccountStatus;
       };
     }
   }

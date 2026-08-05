@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
+import AdminDevelopersPage from '../pages/AdminDevelopersPage';
 import DeveloperDashboardPage from '../pages/DeveloperDashboardPage';
 import BuilderPage from '../pages/BuilderPage';
 import PreviewPage from '../pages/PreviewPage';
@@ -25,6 +26,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdminDashboardPage view="publication" />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/developers" 
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminDevelopersPage />
           </ProtectedRoute>
         } 
       />

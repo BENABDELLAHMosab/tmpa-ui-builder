@@ -1,4 +1,5 @@
-import User from '../models/user.model';
+import mongoose from 'mongoose';
+import User, { AccountStatus } from '../models/user.model';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -11,6 +12,14 @@ export const login = async (email: string, password: string) => {
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
   if (!isPasswordValid) {
     throw new Error('Invalid email or password');
+  }
+
+  const accountStatus = user.accountStatus || 'active';
+  if (user.role === 'user-developer' && accountStatus === 'suspended') {
+    const error: any = new Error('Votre compte est suspendu. Contactez l’administrateur.');
+    error.code = 'ACCOUNT_SUSPENDED';
+    error.statusCode = 403;
+    throw error;
   }
 
   const secret = process.env.JWT_SECRET || 'fallback_secret';
@@ -26,7 +35,8 @@ export const login = async (email: string, password: string) => {
       id: user._id,
       fullName: user.fullName,
       email: user.email,
-      role: user.role
+      role: user.role,
+      accountStatus
     }
   };
 };
@@ -74,7 +84,8 @@ export const createDeveloper = async (input: CreateDeveloperInput) => {
     fullName: trimmedFullName,
     email: normalizedEmail,
     passwordHash,
-    role: 'user-developer'
+    role: 'user-developer',
+    accountStatus: 'active'
   });
 
   return {
@@ -82,6 +93,58 @@ export const createDeveloper = async (input: CreateDeveloperInput) => {
     fullName: newUser.fullName,
     email: newUser.email,
     role: newUser.role,
+    accountStatus: newUser.accountStatus || 'active',
     createdAt: newUser.createdAt
+  };
+};
+
+export const getDevelopers = async () => {
+  const developers = await User.find({ role: 'user-developer' })
+    .sort({ createdAt: -1 })
+    .select('_id fullName email role accountStatus createdAt updatedAt')
+    .lean();
+
+  return developers.map((u) => ({
+    id: u._id.toString(),
+    fullName: u.fullName,
+    email: u.email,
+    role: u.role,
+    accountStatus: u.accountStatus || 'active',
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt
+  }));
+};
+
+export const updateDeveloperStatus = async (userId: string, accountStatus: AccountStatus) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const error: any = new Error('Invalid user ID');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (accountStatus !== 'active' && accountStatus !== 'suspended') {
+    const error: any = new Error("Invalid account status. Allowed values: 'active', 'suspended'");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findOne({ _id: userId, role: 'user-developer' });
+  if (!user) {
+    const error: any = new Error('Developer not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  user.accountStatus = accountStatus;
+  await user.save();
+
+  return {
+    id: user._id.toString(),
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    accountStatus: user.accountStatus || 'active',
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
   };
 };
