@@ -4,6 +4,7 @@ import { pageService } from '../services/page.service';
 import type { UiPage } from '../types/page';
 import PortalLayout from '../components/layout/PortalLayout';
 import StatusBadge from '../components/ui/StatusBadge';
+import AddDeveloperModal from '../components/admin/AddDeveloperModal';
 import '../styles/dashboard.css';
 
 interface AdminDashboardPageProps {
@@ -17,6 +18,7 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string>('');
+  const [isAddDevModalOpen, setIsAddDevModalOpen] = useState<boolean>(false);
   
   // Local state for Publication tabs
   const [pubTab, setPubTab] = useState<'approved' | 'published'>('approved');
@@ -38,8 +40,9 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
         return false;
       });
       setPages(visiblePages);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load pages');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load pages';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -54,8 +57,9 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
       setPages(previousPages => previousPages.filter(p => p._id !== updatedPage._id));
       setSuccessMessage("Page approved successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err: any) {
-      alert(err.message || "Failed to approve page");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to approve page";
+      alert(message);
     } finally {
       setActionLoadingId(null);
     }
@@ -71,8 +75,9 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
       setPages(pages.filter(p => p._id !== pageId));
       setSuccessMessage("Page rejected successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err: any) {
-      alert(err.message || "Failed to reject page");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to reject page";
+      alert(message);
     } finally {
       setActionLoadingId(null);
     }
@@ -87,8 +92,9 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
       setPages(pages.map(p => p._id === pageId ? updatedPage : p));
       setSuccessMessage("Page published successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err: any) {
-      alert(err.message || "Failed to publish page");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to publish page";
+      alert(message);
     } finally {
       setActionLoadingId(null);
     }
@@ -112,10 +118,17 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
       {successMessage && <div style={{ color: 'white', backgroundColor: 'var(--color-success)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>{successMessage}</div>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '20px', color: 'var(--color-primary)', margin: 0 }}>
             {view === 'pending' ? 'Pending Requests' : 'Publication'}
           </h2>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setIsAddDevModalOpen(true)}
+          >
+            Add Developer
+          </button>
         </div>
 
         {view === 'pending' && (
@@ -235,6 +248,15 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
           )}
         </div>
       </div>
+
+      <AddDeveloperModal
+        isOpen={isAddDevModalOpen}
+        onClose={() => setIsAddDevModalOpen(false)}
+        onSuccess={(msg) => {
+          setSuccessMessage(msg);
+          setTimeout(() => setSuccessMessage(''), 4000);
+        }}
+      />
     </PortalLayout>
   );
 };

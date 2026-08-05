@@ -30,3 +30,58 @@ export const login = async (email: string, password: string) => {
     }
   };
 };
+
+export interface CreateDeveloperInput {
+  fullName: string;
+  email: string;
+  password: string;
+}
+
+export const createDeveloper = async (input: CreateDeveloperInput) => {
+  const trimmedFullName = typeof input.fullName === 'string' ? input.fullName.trim() : '';
+  const normalizedEmail = typeof input.email === 'string' ? input.email.trim().toLowerCase() : '';
+  const password = typeof input.password === 'string' ? input.password : '';
+
+  if (!trimmedFullName) {
+    const error: any = new Error('Full name is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
+    const error: any = new Error('A valid email address is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!password || password.length < 8) {
+    const error: any = new Error('Password must be at least 8 characters long');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  if (existingUser) {
+    const error: any = new Error('An account with this email already exists');
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const newUser = await User.create({
+    fullName: trimmedFullName,
+    email: normalizedEmail,
+    passwordHash,
+    role: 'user-developer'
+  });
+
+  return {
+    id: newUser._id,
+    fullName: newUser.fullName,
+    email: newUser.email,
+    role: newUser.role,
+    createdAt: newUser.createdAt
+  };
+};
