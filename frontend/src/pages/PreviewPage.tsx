@@ -37,6 +37,7 @@ const PreviewPage = () => {
       try {
         setLoading(true);
         if (versionNumber) {
+          // Priority A – explicit versionNumber in URL: historical behaviour unchanged
           const parsedVersion = parseInt(versionNumber, 10);
           if (isNaN(parsedVersion) || parsedVersion < 1) {
             setError("Invalid page or version identifier.");
@@ -59,19 +60,42 @@ const PreviewPage = () => {
             setError("Invalid schema snapshot in this version.");
           }
         } else {
+          // Priority B – normal route /preview/:pageId
           const data = await pageService.getPageById(pageId);
           
           if (cancelled) return;
           
-          setHistoricalVersion(null);
           setPage(data);
-          if (data.schema && Array.isArray(data.schema.components)) {
-            setComponents(normalizePageComponents(data.schema.components as BuilderComponent[]));
+
+          if (data.status === 'published' && data.publishedVersionNumber != null) {
+            // Load the published PageVersion snapshot.
+            // If the snapshot cannot be found this is a data-integrity error — do NOT
+            // silently fall back to page.schema.
+            const publishedVersion = await pageService.getPageVersion(pageId, data.publishedVersionNumber);
+
+            if (cancelled) return;
+
+            setHistoricalVersion(publishedVersion);
+
+            const previewSchema = publishedVersion.schemaSnapshot;
+            if (previewSchema && Array.isArray(previewSchema.components)) {
+              setComponents(normalizePageComponents(previewSchema.components as BuilderComponent[]));
+            } else {
+              setComponents([]);
+              setError(`Published snapshot for version ${data.publishedVersionNumber} has an invalid schema.`);
+            }
+          } else {
+            // Not published – display current page.schema
+            setHistoricalVersion(null);
+            if (data.schema && Array.isArray(data.schema.components)) {
+              setComponents(normalizePageComponents(data.schema.components as BuilderComponent[]));
+            }
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (cancelled) return;
-        setError(err.message || "Unable to load this page version.");
+        const message = err instanceof Error ? err.message : "Unable to load this page version.";
+        setError(message);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -115,6 +139,22 @@ const PreviewPage = () => {
     );
   }
 
+  // Determine display context:
+  // isExplicitVersion  → URL contains versionNumber (historical behaviour)
+  // isPublishedSnapshot → normal route, page is published, snapshot loaded
+  const isExplicitVersion = Boolean(versionNumber);
+  const isPublishedSnapshot = !isExplicitVersion && page?.status === 'published' && page?.publishedVersionNumber != null;
+
+  // The version number shown in the topbar:
+  // – explicit URL  → the requested version number
+  // – published     → publishedVersionNumber (not page.version, which may differ)
+  // – draft/other   → page.version
+  const displayedVersionNumber = isExplicitVersion
+    ? historicalVersion?.versionNumber
+    : isPublishedSnapshot
+      ? page?.publishedVersionNumber
+      : page?.version;
+
   return (
     <div className="preview-layout">
       <header className="preview-topbar">
@@ -126,7 +166,7 @@ const PreviewPage = () => {
           </div>
           <h2 style={{ marginLeft: '0.5rem', color: 'var(--text-primary)', margin: 0, fontSize: '1.25rem' }}>{historicalVersion ? historicalVersion.pageName : page?.name}</h2>
           
-          {historicalVersion ? (
+          {isExplicitVersion && historicalVersion ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '1rem', borderLeft: '1px solid var(--border-primary)', paddingLeft: '1rem' }}>
                <span style={{ color: 'var(--warning-400)', fontWeight: 600, fontSize: '0.9rem' }}>Viewing version {historicalVersion.versionNumber}</span>
                <span style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>Read-only</span>
@@ -135,7 +175,11 @@ const PreviewPage = () => {
             </div>
           ) : (
             <>
-              {page?.version && <span style={{ color: 'var(--text-secondary)', paddingLeft: '1rem', borderLeft: '1px solid var(--border-primary)', fontSize: '0.85rem', fontWeight: 500 }}>v{page.version}</span>}
+              {displayedVersionNumber != null && (
+                <span style={{ color: 'var(--text-secondary)', paddingLeft: '1rem', borderLeft: '1px solid var(--border-primary)', fontSize: '0.85rem', fontWeight: 500 }}>
+                  {isPublishedSnapshot ? `Published version ${displayedVersionNumber}` : `v${displayedVersionNumber}`}
+                </span>
+              )}
               {page?.status && <StatusBadge status={page.status} />}
             </>
           )}
@@ -145,17 +189,17 @@ const PreviewPage = () => {
             <button
               className="btn btn-secondary"
               onClick={() => {
-                if (historicalVersion) {
+                if (isExplicitVersion) {
                   navigate(`/builder/${pageId}`);
                 } else {
                   handleBackToBuilder();
                 }
               }}
             >
-              {historicalVersion ? "Open builder" : "Back to builder"}
+              {isExplicitVersion ? "Open builder" : "Back to builder"}
             </button>
           )}
-          {!historicalVersion && (
+          {!isExplicitVersion && (
             <button
               className="btn btn-primary"
               onClick={handleBackToDashboard}
@@ -164,7 +208,7 @@ const PreviewPage = () => {
               Back to dashboard
             </button>
           )}
-          {historicalVersion && (
+          {isExplicitVersion && (
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>This preview opened in a separate tab.</span>
           )}
         </div>
@@ -175,9 +219,13 @@ const PreviewPage = () => {
           <h3>Versions</h3>
           <div className="preview-sidebar-list">
             {page && Array.from({ length: page.version }, (_, i) => page.version - i).map((v) => {
-              const isSelected = historicalVersion ? v === historicalVersion.versionNumber : v === page.version;
+              const isSelected = isExplicitVersion
+                ? v === historicalVersion?.versionNumber
+                : isPublishedSnapshot
+                  ? v === page.publishedVersionNumber
+                  : v === page.version;
               const isCurrent = v === page.version;
-              const targetUrl = v === page.version && historicalVersion ? `/preview/${pageId}` : `/pages/${pageId}/versions/${v}/preview`;
+              const targetUrl = v === page.version && isExplicitVersion ? `/preview/${pageId}` : `/pages/${pageId}/versions/${v}/preview`;
 
               return (
                 <Link 
