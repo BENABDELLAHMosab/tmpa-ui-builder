@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { pageService } from '../services/page.service';
 import { customComponentService } from '../services/customComponent.service';
 import type { UiPage, BuilderComponent, BuilderComponentType, BuilderComponentStyle, BuilderComponentLayout } from '../types/page';
+import type { CustomComponentSummary } from '../types/customComponent';
 import BuilderHeader from '../components/builder/BuilderHeader';
 import ComponentSidebar from '../components/builder/ComponentSidebar';
 import BuilderCanvas from '../components/builder/BuilderCanvas';
@@ -352,6 +353,10 @@ const BuilderPage = () => {
   const [saveComponentIsSaving, setSaveComponentIsSaving] = useState(false);
   const [saveComponentError, setSaveComponentError] = useState<string | null>(null);
 
+  const [customComponents, setCustomComponents] = useState<CustomComponentSummary[]>([]);
+  const [isLoadingCustomComponents, setIsLoadingCustomComponents] = useState<boolean>(false);
+  const [customComponentsError, setCustomComponentsError] = useState<string | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -393,6 +398,23 @@ const BuilderPage = () => {
 
     fetchPage();
   }, [pageId]);
+
+  const loadCustomComponents = useCallback(async () => {
+    try {
+      setIsLoadingCustomComponents(true);
+      setCustomComponentsError(null);
+      const data = await customComponentService.getCustomComponents();
+      setCustomComponents(data);
+    } catch (err: any) {
+      setCustomComponentsError(err.message || 'Failed to load custom components');
+    } finally {
+      setIsLoadingCustomComponents(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCustomComponents();
+  }, [loadCustomComponents]);
 
   const isValidComponentType = (type: unknown): type is BuilderComponentType => {
     return typeof type === 'string' && ['Text', 'Button', 'Input', 'Card', 'Table', 'Select', 'Checkbox', 'Radio', 'Textarea', 'Image', 'Divider', 'Container'].includes(type);
@@ -638,6 +660,8 @@ const BuilderPage = () => {
           components: subtreeComponents
         }
       });
+
+      loadCustomComponents();
 
       setSaveComponentModalOpen(false);
       setSuccessMessage("Component saved to your library");
@@ -913,7 +937,12 @@ const BuilderPage = () => {
         )}
 
         <div className="builder-main">
-          <ComponentSidebar onAddComponent={handleAddComponent} />
+          <ComponentSidebar 
+            onAddComponent={handleAddComponent} 
+            customComponents={customComponents}
+            isLoadingCustomComponents={isLoadingCustomComponents}
+            customComponentsError={customComponentsError}
+          />
           
           <BuilderCanvas 
             components={components} 

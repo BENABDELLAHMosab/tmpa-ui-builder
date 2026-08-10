@@ -83,13 +83,35 @@
   gap: 1rem;
   overflow-y: auto;
   flex-shrink: 0;
+  
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 201, 225, 0.45) transparent;
+}
+
+.builder-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.builder-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.builder-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(180, 201, 225, 0.45);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.builder-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(205, 220, 238, 0.7);
+  background-clip: padding-box;
 }
 
 /* Sidebar Component Palette Redesign */
 .component-sidebar__palette {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   gap: 1rem;
 }
 
@@ -132,9 +154,6 @@
 }
 
 .component-sidebar__list {
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 4px;

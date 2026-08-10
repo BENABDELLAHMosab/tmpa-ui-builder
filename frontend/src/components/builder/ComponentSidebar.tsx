@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-
 import type { BuilderComponentType } from '../../types/page';
+import type { CustomComponentSummary } from '../../types/customComponent';
 import '../../styles/builder.css';
 import {
   SearchIcon,
@@ -75,9 +75,17 @@ const DraggableSidebarItem = ({ definition, onClick }: DraggableSidebarItemProps
 
 interface ComponentSidebarProps {
   onAddComponent: (type: BuilderComponentType) => void;
+  customComponents: CustomComponentSummary[];
+  isLoadingCustomComponents: boolean;
+  customComponentsError: string | null;
 }
 
-const ComponentSidebar = ({ onAddComponent }: ComponentSidebarProps) => {
+const ComponentSidebar = ({ 
+  onAddComponent,
+  customComponents,
+  isLoadingCustomComponents,
+  customComponentsError
+}: ComponentSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   
   const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -111,6 +119,37 @@ const ComponentSidebar = ({ onAddComponent }: ComponentSidebarProps) => {
             ))
           ) : (
             <p className="component-sidebar__empty">Aucun composant trouvé</p>
+          )}
+        </div>
+      </div>
+
+      <div className="component-sidebar__palette" style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 600, padding: '0 12px' }}>
+          My Components
+        </h4>
+        
+        <div className="component-sidebar__list">
+          {isLoadingCustomComponents ? (
+            <p className="component-sidebar__empty" style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</p>
+          ) : customComponentsError ? (
+            <p className="component-sidebar__empty" style={{ fontSize: '13px', color: '#ef4444' }}>{customComponentsError}</p>
+          ) : customComponents.length === 0 ? (
+            <p className="component-sidebar__empty" style={{ fontSize: '13px', color: '#94a3b8' }}>No custom components yet</p>
+          ) : (
+            customComponents.map((comp) => (
+              <div
+                key={comp.id}
+                className="component-sidebar__item"
+                style={{ cursor: 'default', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 12px', gap: '4px' }}
+              >
+                <span className="component-sidebar__item-label" style={{ fontWeight: 600 }}>{comp.name}</span>
+                {comp.description && (
+                  <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                    {comp.description}
+                  </span>
+                )}
+              </div>
+            ))
           )}
         </div>
       </div>
