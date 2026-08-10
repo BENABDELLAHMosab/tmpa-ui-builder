@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pageService } from '../services/page.service';
+import { customComponentService } from '../services/customComponent.service';
 import type { UiPage, BuilderComponent, BuilderComponentType, BuilderComponentStyle, BuilderComponentLayout } from '../types/page';
 import BuilderHeader from '../components/builder/BuilderHeader';
 import ComponentSidebar from '../components/builder/ComponentSidebar';
@@ -8,6 +9,7 @@ import BuilderCanvas from '../components/builder/BuilderCanvas';
 import PropertiesPanel from '../components/builder/PropertiesPanel';
 import HistoryPanel from '../components/builder/HistoryPanel';
 import ComponentRenderer from '../components/renderers/ComponentRenderer';
+import SaveCustomComponentModal from '../components/builder/SaveCustomComponentModal';
 import '../styles/builder.css';
 import {
   DndContext,
@@ -346,6 +348,10 @@ const BuilderPage = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
 
+  const [saveComponentModalOpen, setSaveComponentModalOpen] = useState(false);
+  const [saveComponentIsSaving, setSaveComponentIsSaving] = useState(false);
+  const [saveComponentError, setSaveComponentError] = useState<string | null>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -601,6 +607,50 @@ const BuilderPage = () => {
         from: `/builder/${pageId}`
       }
     });
+  };
+
+  const handleOpenSaveComponentModal = (componentId: string) => {
+    if (!componentId) return;
+    setSaveComponentError(null);
+    setSaveComponentModalOpen(true);
+  };
+
+  const handleSaveCustomComponent = async (name: string, description: string) => {
+    if (!selectedComponentId) return;
+
+    try {
+      setSaveComponentIsSaving(true);
+      setSaveComponentError(null);
+
+      // Extract subtree
+      const descendantIds = getDescendantIds(components, selectedComponentId);
+      
+      // Clone components
+      const subtreeComponents = components
+        .filter(c => descendantIds.has(c.id))
+        .map(c => JSON.parse(JSON.stringify(c)));
+
+      await customComponentService.createCustomComponent({
+        name,
+        description,
+        template: {
+          rootComponentId: selectedComponentId,
+          components: subtreeComponents
+        }
+      });
+
+      setSaveComponentModalOpen(false);
+      setSuccessMessage("Component saved to your library");
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      if (err.status === 409) {
+        setSaveComponentError("You already have a component with this name.");
+      } else {
+        setSaveComponentError(err.message || "Failed to save custom component");
+      }
+    } finally {
+      setSaveComponentIsSaving(false);
+    }
   };
 
   const resetDragState = useCallback(() => {
@@ -881,6 +931,7 @@ const BuilderPage = () => {
               onUpdateStyle={handleUpdateComponentStyle}
               onUpdateLayout={handleUpdateComponentLayout}
               onDelete={handleDeleteComponent}
+              onSaveAsComponent={handleOpenSaveComponentModal}
             />
           ) : (
             <HistoryPanel
@@ -922,6 +973,15 @@ const BuilderPage = () => {
           })() : null}
         </DragOverlay>,
         document.body
+      )}
+      
+      {saveComponentModalOpen && (
+        <SaveCustomComponentModal
+          onClose={() => setSaveComponentModalOpen(false)}
+          onSave={handleSaveCustomComponent}
+          isSaving={saveComponentIsSaving}
+          error={saveComponentError}
+        />
       )}
     </DndContext>
   );

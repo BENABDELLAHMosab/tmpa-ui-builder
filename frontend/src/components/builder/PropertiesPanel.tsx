@@ -19,9 +19,10 @@ interface PropertiesPanelProps {
   onUpdateStyle?: (componentId: string, key: any, value: any) => void;
   onUpdateLayout?: <K extends keyof BuilderComponentLayout>(componentId: string, key: K, value: BuilderComponentLayout[K]) => void;
   onDelete: (componentId: string) => void;
+  onSaveAsComponent?: (componentId: string) => void;
 }
 
-const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUpdateLayout, onDelete }: PropertiesPanelProps) => {
+const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUpdateLayout, onDelete, onSaveAsComponent }: PropertiesPanelProps) => {
   if (!selectedComponent) {
     return (
       <div className="properties-panel">
@@ -131,8 +132,22 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
 
           {renderProps()}
 
+          {/* SAVE AS COMPONENT SECTION */}
+          {selectedComponent.type === 'Container' && onSaveAsComponent && (
+            <div className="prop-group" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+              <button 
+                type="button"
+                className="btn btn-secondary" 
+                onClick={() => onSaveAsComponent(selectedComponent.id)}
+                style={{ width: '100%' }}
+              >
+                Save as component
+              </button>
+            </div>
+          )}
+
           {/* DELETE SECTION */}
-          <div className="prop-group" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #fee2e2' }}>
+          <div className="prop-group" style={{ marginTop: selectedComponent.type === 'Container' ? '12px' : '24px', paddingTop: '16px', borderTop: selectedComponent.type === 'Container' ? 'none' : '1px solid #fee2e2' }}>
             <button 
               type="button"
               className="btn" 
