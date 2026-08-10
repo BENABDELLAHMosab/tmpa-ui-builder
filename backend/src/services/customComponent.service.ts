@@ -1,0 +1,146 @@
+import CustomComponent from '../models/customComponent.model';
+
+function validateAndNormalizeTemplate(template: any): any {
+  if (!template || typeof template !== 'object') {
+    throw new Error('Template is missing or invalid');
+  }
+
+  const { rootComponentId, components } = template;
+
+  if (typeof rootComponentId !== 'string' || rootComponentId.trim() === '') {
+    throw new Error('Invalid rootComponentId');
+  }
+
+  if (!Array.isArray(components) || components.length === 0) {
+    throw new Error('Components array is missing or empty');
+  }
+
+  // Clone to avoid mutating original
+  const clonedComponents = JSON.parse(JSON.stringify(components));
+
+  const componentMap = new Map<string, any>();
+  const ids = new Set<string>();
+
+  for (const comp of clonedComponents) {
+    if (!comp.id || typeof comp.id !== 'string') {
+      throw new Error('All components must have a valid string id');
+    }
+    if (ids.has(comp.id)) {
+      throw new Error(`Duplicate component id found: ${comp.id}`);
+    }
+    ids.add(comp.id);
+    componentMap.set(comp.id, comp);
+  }
+
+  const rootComponent = componentMap.get(rootComponentId);
+  if (!rootComponent) {
+    throw new Error('rootComponentId does not correspond to any component in the array');
+  }
+
+  if (rootComponent.type !== 'Container') {
+    throw new Error('Root component must be of type "Container"');
+  }
+
+  for (const comp of clonedComponents) {
+    if (comp.id !== rootComponentId) {
+      if (comp.parentId && !componentMap.has(comp.parentId)) {
+        throw new Error(`Component ${comp.id} references a missing parentId: ${comp.parentId}`);
+      }
+    }
+  }
+
+  // Normalize root component
+  rootComponent.parentId = null;
+  
+  if (!rootComponent.layout) {
+    rootComponent.layout = {};
+  }
+  rootComponent.layout.x = 0;
+  rootComponent.layout.y = 0;
+
+  return {
+    rootComponentId,
+    components: clonedComponents
+  };
+}
+
+export const createCustomComponent = async (data: { ownerId: string; name: string; description?: string; template: any }) => {
+  const name = (data.name || '').trim();
+  if (!name) {
+    throw new Error('Name is required and cannot be empty');
+  }
+
+  const nameKey = name.toLowerCase();
+  
+  const normalizedTemplate = validateAndNormalizeTemplate(data.template);
+
+  const customComponent = new CustomComponent({
+    ownerId: data.ownerId,
+    name,
+    nameKey,
+    description: data.description ? data.description.trim() : '',
+    template: normalizedTemplate
+  });
+
+  try {
+    const saved = await customComponent.save();
+    return saved.toJSON();
+  } catch (error: any) {
+    if (error.code === 11000) {
+      const conflictError: any = new Error('A component with this name already exists for this user');
+      conflictError.code = 'DUPLICATE_KEY';
+      throw conflictError;
+    }
+    throw error;
+  }
+};
+
+export const listCustomComponents = async (ownerId: string) => {
+  const components = await CustomComponent.find({ ownerId })
+    .select('id name description createdAt updatedAt')
+    .sort({ createdAt: -1 })
+    .lean();
+  return components;
+};
+
+export const getCustomComponent = async (id: string, ownerId: string) => {
+  const component = await CustomComponent.findOne({ _id: id, ownerId }).lean();
+  return component;
+};
+
+export const updateCustomComponentMetadata = async (id: string, ownerId: string, updates: { name?: string; description?: string }) => {
+  const component = await CustomComponent.findOne({ _id: id, ownerId });
+  if (!component) {
+    return null;
+  }
+
+  if (updates.name !== undefined) {
+    const trimmedName = updates.name.trim();
+    if (!trimmedName) {
+      throw new Error('Name cannot be empty');
+    }
+    component.name = trimmedName;
+    component.nameKey = trimmedName.toLowerCase();
+  }
+
+  if (updates.description !== undefined) {
+    component.description = updates.description.trim();
+  }
+
+  try {
+    const saved = await component.save();
+    return saved.toJSON();
+  } catch (error: any) {
+    if (error.code === 11000) {
+      const conflictError: any = new Error('A component with this name already exists for this user');
+      conflictError.code = 'DUPLICATE_KEY';
+      throw conflictError;
+    }
+    throw error;
+  }
+};
+
+export const deleteCustomComponent = async (id: string, ownerId: string) => {
+  const result = await CustomComponent.deleteOne({ _id: id, ownerId });
+  return result.deletedCount > 0;
+};
