@@ -35,66 +35,66 @@ const SaveCustomComponentModal = ({ onClose, onSave, isSaving, error }: SaveCust
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '400px' }}>
-        <div className="modal-header">
-          <h2>Save as Custom Component</h2>
-          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={isSaving}>×</button>
+    <div className="save-custom-modal-overlay">
+      <div className="save-custom-modal">
+        <div className="save-custom-modal__header">
+          <div className="save-custom-modal__title-group">
+            <h2 className="save-custom-modal__title">Save as Custom Component</h2>
+            <p className="save-custom-modal__subtitle">Create a reusable component from the selected container.</p>
+          </div>
+          <button type="button" className="save-custom-modal__close-btn" onClick={onClose} disabled={isSaving}>×</button>
         </div>
-        <div className="modal-body">
-          <form onSubmit={handleSubmit}>
-            <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Name *</label>
+        <form onSubmit={handleSubmit}>
+          <div className="save-custom-modal__body">
+            <div className="save-custom-modal__field-group">
+              <label className="save-custom-modal__label">Name *</label>
               <input
                 type="text"
-                className="input-field"
+                className="save-custom-modal__input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Primary Login Card"
                 disabled={isSaving}
-                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
               />
             </div>
             
-            <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Description</label>
+            <div className="save-custom-modal__field-group">
+              <label className="save-custom-modal__label">Description</label>
               <textarea
-                className="input-field"
+                className="save-custom-modal__textarea"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional description"
                 rows={3}
                 disabled={isSaving}
-                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
               />
             </div>
 
             {(validationError || error) && (
-              <div style={{ color: '#ef4444', marginBottom: '16px', fontSize: '14px' }}>
+              <div className="save-custom-modal__error">
                 {validationError || error}
               </div>
             )}
+          </div>
 
-            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                onClick={onClose} 
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
-                disabled={isSaving}
-                style={{ backgroundColor: '#1e3a66', color: 'white', padding: '8px 16px', borderRadius: '4px', border: 'none' }}
-              >
-                {isSaving ? "Saving..." : "Save Component"}
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="save-custom-modal__footer">
+            <button 
+              type="button" 
+              className="save-custom-modal__btn-cancel" 
+              onClick={onClose} 
+              disabled={isSaving}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="save-custom-modal__btn-save" 
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save Component"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
