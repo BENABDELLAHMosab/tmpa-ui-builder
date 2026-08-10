@@ -1,4 +1,4 @@
-import type { CreateCustomComponentPayload, CreateCustomComponentResponse, CustomComponentSummary } from '../types/customComponent';
+import type { CreateCustomComponentPayload, CreateCustomComponentResponse, CustomComponentSummary, CustomComponentDetail } from '../types/customComponent';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -37,6 +37,26 @@ export const customComponentService = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       const error: any = new Error(errorData.error || "Failed to fetch custom components");
+      error.status = response.status;
+      throw error;
+    }
+
+    const data = await response.json();
+    return data.map((item: any) => ({
+      ...item,
+      id: item.id ?? item._id
+    }));
+  },
+
+  getCustomComponent: async (id: string): Promise<CustomComponentDetail> => {
+    const response = await fetch(`${API_URL}/custom-components/${id}`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error: any = new Error(errorData.error || "Failed to fetch custom component details");
       error.status = response.status;
       throw error;
     }

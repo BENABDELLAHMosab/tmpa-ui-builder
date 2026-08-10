@@ -73,6 +73,41 @@ const DraggableSidebarItem = ({ definition, onClick }: DraggableSidebarItemProps
   );
 };
 
+interface DraggableCustomComponentProps {
+  customComponent: CustomComponentSummary;
+}
+
+const DraggableCustomComponent = ({ customComponent }: DraggableCustomComponentProps) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `sidebar-custom-${customComponent.id}`,
+    data: {
+      source: "custom-component",
+      customComponentId: customComponent.id,
+      name: customComponent.name
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={[
+        "component-sidebar__item",
+        isDragging ? "component-sidebar__item--dragging" : ""
+      ].filter(Boolean).join(" ")}
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 12px', gap: '4px', cursor: isDragging ? 'grabbing' : 'grab' }}
+    >
+      <span className="component-sidebar__item-label" style={{ fontWeight: 600 }}>{customComponent.name}</span>
+      {customComponent.description && (
+        <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+          {customComponent.description}
+        </span>
+      )}
+    </div>
+  );
+};
+
 interface ComponentSidebarProps {
   onAddComponent: (type: BuilderComponentType) => void;
   customComponents: CustomComponentSummary[];
@@ -137,18 +172,7 @@ const ComponentSidebar = ({
             <p className="component-sidebar__empty" style={{ fontSize: '13px', color: '#94a3b8' }}>No custom components yet</p>
           ) : (
             customComponents.map((comp) => (
-              <div
-                key={comp.id}
-                className="component-sidebar__item"
-                style={{ cursor: 'default', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 12px', gap: '4px' }}
-              >
-                <span className="component-sidebar__item-label" style={{ fontWeight: 600 }}>{comp.name}</span>
-                {comp.description && (
-                  <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                    {comp.description}
-                  </span>
-                )}
-              </div>
+              <DraggableCustomComponent key={comp.id} customComponent={comp} />
             ))
           )}
         </div>

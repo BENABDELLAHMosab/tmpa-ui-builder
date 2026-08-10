@@ -46,6 +46,7 @@ import {
   isCanvasDragData
 } from '../utils/container';
 import type { DragTargetState, ContainerDropActiveDescriptor } from '../utils/container';
+import { instantiateCustomComponent } from '../utils/customComponent';
 import { createPortal } from 'react-dom';
 
 const createBuilderComponent = (type: BuilderComponentType, initialX?: number, initialY?: number, initialZIndex?: number, parentId: string | null = null): BuilderComponent => {
@@ -339,6 +340,7 @@ const BuilderPage = () => {
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [activeSidebarType, setActiveSidebarType] = useState<BuilderComponentType | null>(null);
   const [activeCanvasComponentId, setActiveCanvasComponentId] = useState<string | null>(null);
+  const [activeCustomComponentData, setActiveCustomComponentData] = useState<{ id: string, name: string } | null>(null);
   const [dragTargetState, setDragTargetState] = useState<DragTargetState | null>(null);
   
   type RightPanelMode = "properties" | "history";
@@ -680,6 +682,7 @@ const BuilderPage = () => {
   const resetDragState = useCallback(() => {
     setActiveSidebarType(null);
     setActiveCanvasComponentId(null);
+    setActiveCustomComponentData(null);
     setDragTargetState(null);
   }, []);
 
@@ -693,6 +696,11 @@ const BuilderPage = () => {
       if (isValidComponentType(type)) {
         setActiveSidebarType(type);
       }
+    } else if (active.data?.current?.source === 'custom-component') {
+      setActiveCustomComponentData({
+        id: active.data.current.customComponentId,
+        name: active.data.current.name
+      });
     } else if (isCanvasItem) {
       setActiveCanvasComponentId(active.id as string);
     }
@@ -876,6 +884,51 @@ const BuilderPage = () => {
           return [...prev, newComponent];
         });
         setSelectedComponentId(newComponent.id);
+      } else if (active.data?.current?.source === 'custom-component') {
+        if (!canvasRef.current || !active.rect.current.translated) return;
+        
+        if (isContainerDropData(over.data?.current)) {
+          return;
+        }
+
+        const targetRect = canvasRef.current.getBoundingClientRect();
+        const dropX = active.rect.current.translated.left - targetRect.left;
+        const dropY = active.rect.current.translated.top - targetRect.top;
+        const customComponentId = active.data.current.customComponentId;
+
+        if (typeof customComponentId !== "string" || customComponentId.trim() === "") {
+          setError("Invalid custom component ID");
+          setTimeout(() => setError(null), 3000);
+          return;
+        }
+
+        const executeCustomComponentDrop = async () => {
+          try {
+            const detail = await customComponentService.getCustomComponent(customComponentId);
+            setComponents(prev => {
+              const zIndex = getHighestZIndex(prev, null) + 1;
+              const instantiatedComponents = instantiateCustomComponent(
+                detail.template,
+                { x: Math.max(0, dropX), y: Math.max(0, dropY) },
+                zIndex
+              );
+              if (instantiatedComponents.length > 0) {
+                const newRootId = instantiatedComponents.find(c => c.parentId === null)?.id;
+                if (newRootId) {
+                  // Hack to set selected component id after state update in async context
+                  setTimeout(() => setSelectedComponentId(newRootId), 0);
+                }
+                return [...prev, ...instantiatedComponents];
+              }
+              return prev;
+            });
+          } catch (err: any) {
+            setError(err.message || "Failed to load custom component template");
+            setTimeout(() => setError(null), 3000);
+          }
+        };
+
+        executeCustomComponentDrop();
       }
     } finally {
       resetDragState();
@@ -980,6 +1033,11 @@ const BuilderPage = () => {
           {activeSidebarType ? (
             <div className="drag-overlay-item">
               {activeSidebarType}
+            </div>
+          ) : null}
+          {activeCustomComponentData ? (
+            <div className="drag-overlay-item" style={{ border: '2px solid #3b82f6' }}>
+              {activeCustomComponentData.name}
             </div>
           ) : null}
           {activeCanvasComponentId ? (() => {
