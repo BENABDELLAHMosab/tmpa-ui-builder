@@ -31,6 +31,14 @@ export const createCustomComponent = async (req: Request, res: Response): Promis
       res.status(409).json({ error: error.message });
       return;
     }
+    if (error.code === 'CUSTOM_COMPONENT_CONTENT_EXISTS') {
+      res.status(409).json({
+        code: error.code,
+        error: error.message,
+        existingComponent: error.existingComponent
+      });
+      return;
+    }
     if (error.message && (error.message.includes('missing') || error.message.includes('Invalid') || error.message.includes('array') || error.message.includes('required') || error.message.includes('Component') || error.message.includes('empty'))) {
       res.status(400).json({ error: error.message });
       return;

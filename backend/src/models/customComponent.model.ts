@@ -10,6 +10,7 @@ export interface ICustomComponent extends Document {
   name: string;
   nameKey: string;
   description: string;
+  contentHash?: string;
   template: ICustomComponentTemplate;
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +22,7 @@ const customComponentSchema: Schema = new Schema(
     name: { type: String, required: true, trim: true, maxlength: 80 },
     nameKey: { type: String, required: true },
     description: { type: String, default: "", trim: true, maxlength: 240 },
+    contentHash: { type: String },
     template: {
       rootComponentId: { type: String, required: true },
       components: { type: [Schema.Types.Mixed], required: true }
@@ -30,5 +32,9 @@ const customComponentSchema: Schema = new Schema(
 );
 
 customComponentSchema.index({ ownerId: 1, nameKey: 1 }, { unique: true });
+customComponentSchema.index(
+  { ownerId: 1, contentHash: 1 },
+  { unique: true, partialFilterExpression: { contentHash: { $exists: true, $type: 'string' } } }
+);
 
 export default mongoose.model<ICustomComponent>('CustomComponent', customComponentSchema);

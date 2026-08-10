@@ -669,7 +669,10 @@ const BuilderPage = () => {
       setSuccessMessage("Component saved to your library");
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
-      if (err.status === 409) {
+      if (err.code === 'CUSTOM_COMPONENT_CONTENT_EXISTS') {
+        const existingName = err.existingComponent?.name || "another component";
+        setSaveComponentError(`An identical component already exists as "${existingName}".`);
+      } else if (err.status === 409 || err.code === 'DUPLICATE_KEY') {
         setSaveComponentError("You already have a component with this name.");
       } else {
         setSaveComponentError(err.message || "Failed to save custom component");

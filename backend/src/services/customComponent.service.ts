@@ -1,4 +1,5 @@
 import CustomComponent from '../models/customComponent.model';
+import { generateCustomComponentContentHash } from '../utils/customComponentHash';
 
 function validateAndNormalizeTemplate(template: any): any {
   if (!template || typeof template !== 'object') {
@@ -73,12 +74,46 @@ export const createCustomComponent = async (data: { ownerId: string; name: strin
   const nameKey = name.toLowerCase();
   
   const normalizedTemplate = validateAndNormalizeTemplate(data.template);
+  const contentHash = generateCustomComponentContentHash(normalizedTemplate);
+
+  // Check for exact duplicate by contentHash
+  const exactDup = await CustomComponent.findOne({ ownerId: data.ownerId, contentHash });
+  if (exactDup) {
+    const error: any = new Error('An identical custom component already exists.');
+    error.code = 'CUSTOM_COMPONENT_CONTENT_EXISTS';
+    error.existingComponent = { id: exactDup._id.toString(), name: exactDup.name };
+    throw error;
+  }
+
+  // Check old documents without contentHash
+  const oldDocs = await CustomComponent.find({ ownerId: data.ownerId, contentHash: { $exists: false } });
+  for (const oldDoc of oldDocs) {
+    try {
+      const oldHash = generateCustomComponentContentHash(oldDoc.template);
+      if (oldHash === contentHash) {
+        oldDoc.contentHash = oldHash;
+        await oldDoc.save().catch(() => {}); // best effort
+
+        const error: any = new Error('An identical custom component already exists.');
+        error.code = 'CUSTOM_COMPONENT_CONTENT_EXISTS';
+        error.existingComponent = { id: oldDoc._id.toString(), name: oldDoc.name };
+        throw error;
+      }
+      
+      // Save hash for future comparisons
+      oldDoc.contentHash = oldHash;
+      await oldDoc.save().catch(() => {}); // best effort
+    } catch (err) {
+      // ignore hash generation errors for old docs
+    }
+  }
 
   const customComponent = new CustomComponent({
     ownerId: data.ownerId,
     name,
     nameKey,
     description: data.description ? data.description.trim() : '',
+    contentHash,
     template: normalizedTemplate
   });
 
@@ -87,9 +122,15 @@ export const createCustomComponent = async (data: { ownerId: string; name: strin
     return saved.toJSON();
   } catch (error: any) {
     if (error.code === 11000) {
-      const conflictError: any = new Error('A component with this name already exists for this user');
-      conflictError.code = 'DUPLICATE_KEY';
-      throw conflictError;
+      if (error.keyPattern && error.keyPattern.contentHash) {
+        const conflictError: any = new Error('An identical custom component already exists.');
+        conflictError.code = 'CUSTOM_COMPONENT_CONTENT_EXISTS';
+        throw conflictError;
+      } else {
+        const conflictError: any = new Error('A component with this name already exists for this user');
+        conflictError.code = 'DUPLICATE_KEY';
+        throw conflictError;
+      }
     }
     throw error;
   }

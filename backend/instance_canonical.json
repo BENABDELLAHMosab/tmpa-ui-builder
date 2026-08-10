@@ -1,0 +1,182 @@
+{
+  "type": "Container",
+  "style": {
+    "backgroundColor": "#ffffff",
+    "borderColor": "#1b3760",
+    "borderWidth": 4,
+    "borderStyle": "solid",
+    "borderRadius": 0
+  },
+  "layout": {
+    "x": 0,
+    "y": 0,
+    "width": 472,
+    "height": 799
+  },
+  "children": [
+    {
+      "type": "Input",
+      "props": {
+        "label": "Username",
+        "placeholder": "Email",
+        "inputType": "email",
+        "required": true
+      },
+      "style": {
+        "fontFamily": "Calibri",
+        "fontStyle": "italic",
+        "fontSize": 15,
+        "fontWeight": 700,
+        "textAlign": "left",
+        "color": "#0f172a",
+        "backgroundColor": "#ffffff",
+        "borderColor": "#cbd5e1",
+        "borderWidth": 1,
+        "borderRadius": 8,
+        "padding": 12
+      },
+      "layout": {
+        "x": 26,
+        "y": 129,
+        "width": 320,
+        "height": 76,
+        "zIndex": 1
+      },
+      "children": []
+    },
+    {
+      "type": "Input",
+      "props": {
+        "label": "Password",
+        "placeholder": "Pass",
+        "inputType": "password",
+        "required": true
+      },
+      "style": {
+        "fontFamily": "Calibri",
+        "fontStyle": "italic",
+        "fontSize": 15,
+        "fontWeight": 700,
+        "textAlign": "left",
+        "color": "#0f172a",
+        "backgroundColor": "#ffffff",
+        "borderColor": "#cbd5e1",
+        "borderWidth": 1,
+        "borderRadius": 8,
+        "padding": 12
+      },
+      "layout": {
+        "x": 27,
+        "y": 226,
+        "width": 320,
+        "height": 76,
+        "zIndex": 2
+      },
+      "children": []
+    },
+    {
+      "type": "Radio",
+      "props": {
+        "label": "developper",
+        "name": "MBA",
+        "value": "on",
+        "required": true,
+        "defaultChecked": true
+      },
+      "style": {
+        "fontFamily": "Calibri",
+        "fontStyle": "italic",
+        "fontSize": 15,
+        "fontWeight": 700,
+        "textAlign": "left",
+        "color": "#0f172a",
+        "accentColor": "#1b3760",
+        "padding": 8
+      },
+      "layout": {
+        "x": 17,
+        "y": 326,
+        "width": 153,
+        "height": 75,
+        "zIndex": 3
+      },
+      "children": []
+    },
+    {
+      "type": "Radio",
+      "props": {
+        "label": "Admin",
+        "name": "MBA",
+        "value": "on",
+        "required": true,
+        "defaultChecked": false
+      },
+      "style": {
+        "fontFamily": "Calibri",
+        "fontStyle": "italic",
+        "fontSize": 15,
+        "fontWeight": 700,
+        "textAlign": "left",
+        "color": "#0f172a",
+        "accentColor": "#1b3760",
+        "padding": 8
+      },
+      "layout": {
+        "x": 203,
+        "y": 330,
+        "width": 155,
+        "height": 72,
+        "zIndex": 4
+      },
+      "children": []
+    },
+    {
+      "type": "Button",
+      "props": {
+        "label": "Se connecter"
+      },
+      "style": {
+        "fontFamily": "Calibri",
+        "fontStyle": "italic",
+        "fontSize": 15,
+        "fontWeight": 700,
+        "textAlign": "center",
+        "color": "#ffffff",
+        "backgroundColor": "#1e3a66",
+        "borderColor": "#1e3a66",
+        "borderWidth": 1,
+        "borderRadius": 8
+      },
+      "layout": {
+        "x": 41,
+        "y": 429,
+        "width": 180,
+        "height": 48,
+        "zIndex": 5
+      },
+      "children": []
+    },
+    {
+      "type": "Image",
+      "props": {
+        "src": "https://imgs.search.brave.com/etNOF1ghH0KHCAFGDNT2iXAOfD9xWReTEqdsWR9RetY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzLzcyLzM1/LzFjLzcyMzUxY2Rk/NjZjNGQ1MDcwNWZh/N2UwMWI3NTBlMWI0/LmpwZw",
+        "alt": "Image"
+      },
+      "style": {
+        "objectFit": "cover",
+        "backgroundColor": "#f1f5f9",
+        "borderColor": "#cbd5e1",
+        "borderWidth": 0,
+        "borderRadius": 8
+      },
+      "layout": {
+        "x": 241,
+        "y": 5,
+        "width": 220,
+        "height": 80,
+        "zIndex": 6
+      },
+      "children": []
+    }
+  ]
+}

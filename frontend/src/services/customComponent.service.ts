@@ -22,6 +22,8 @@ export const customComponentService = {
       const errorData = await response.json().catch(() => ({}));
       const error: any = new Error(errorData.error || "Failed to create custom component");
       error.status = response.status;
+      if (errorData.code) error.code = errorData.code;
+      if (errorData.existingComponent) error.existingComponent = errorData.existingComponent;
       throw error;
     }
 
