@@ -12,6 +12,7 @@ import '../../styles/builder.css';
 
 interface DraggableCanvasItemProps {
   comp: BuilderComponent;
+  components: BuilderComponent[];
   isSelected: boolean;
   interactionZIndex: number;
   onSelectComponent: (componentId: string) => void;
@@ -29,7 +30,8 @@ type ResizeSession = {
 };
 
 const DraggableCanvasItem = ({ 
-  comp, 
+  comp,
+  components,
   isSelected, 
   interactionZIndex, 
   onSelectComponent, 
@@ -133,7 +135,7 @@ const DraggableCanvasItem = ({
       }}
     >
       <div className="canvas-item__content" style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
-        <ComponentRenderer component={comp} />
+        <ComponentRenderer component={comp} components={components} mode="builder" />
       </div>
       {isSelected && (
         <div
@@ -163,6 +165,7 @@ interface DraggableContainerItemProps extends DraggableCanvasItemProps {
 
 const DraggableContainerItem = ({
   comp,
+  components,
   childrenComponents,
   isSelected,
   interactionZIndex,
@@ -337,6 +340,7 @@ const DraggableContainerItem = ({
             <DraggableContainerItem
               key={child.id}
               comp={child}
+              components={components}
               childrenComponents={componentsByParent.get(child.id) || []}
               isSelected={child.id === globalSelectedComponentId}
               interactionZIndex={interactionZIndex}
@@ -354,6 +358,7 @@ const DraggableContainerItem = ({
             <DraggableCanvasItem
               key={child.id}
               comp={child}
+              components={components}
               isSelected={child.id === globalSelectedComponentId}
               interactionZIndex={interactionZIndex}
               onSelectComponent={onSelectComponent}
@@ -458,6 +463,7 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
                 <DraggableContainerItem
                   key={comp.id}
                   comp={comp}
+                  components={components}
                   childrenComponents={componentsByParent.get(comp.id) || []}
                   isSelected={comp.id === selectedComponentId}
                   isChildSelected={checkChildSelected(comp.id)}
@@ -478,6 +484,7 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
               <DraggableCanvasItem
                 key={comp.id}
                 comp={comp}
+                components={components}
                 isSelected={comp.id === selectedComponentId}
                 interactionZIndex={interactionZIndex}
                 onSelectComponent={onSelectComponent}

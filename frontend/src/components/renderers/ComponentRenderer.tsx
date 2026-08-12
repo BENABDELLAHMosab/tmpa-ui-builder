@@ -116,9 +116,11 @@ function RenderedImage({
 
 interface ComponentRendererProps {
   component: BuilderComponent;
+  components?: BuilderComponent[];
+  mode?: 'builder' | 'preview';
 }
 
-const ComponentRenderer = ({ component }: ComponentRendererProps) => {
+const ComponentRenderer = ({ component, components, mode = 'builder' }: ComponentRendererProps) => {
   switch (component.type) {
     case 'Text': {
       const textStyle = component.style;
@@ -638,6 +640,28 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
       const required = typeof radioProps.required === "boolean" ? radioProps.required : false;
       const defaultChecked = typeof radioProps.defaultChecked === "boolean" ? radioProps.defaultChecked : false;
 
+      let runtimeName: string | undefined = undefined;
+      if (name !== "") {
+        let currentId: string | null = component.id;
+        let rootContainerId: string | null = null;
+        if (components) {
+          const visited = new Set<string>();
+          while (currentId) {
+            if (visited.has(currentId)) break;
+            visited.add(currentId);
+            const comp = components.find(c => c.id === currentId);
+            if (!comp) break;
+            if (comp.type === 'Container') {
+              rootContainerId = comp.id;
+            }
+            currentId = comp.parentId || null;
+          }
+        }
+        const scope = rootContainerId ? rootContainerId : "canvas";
+        runtimeName = `${name}__${scope}__${mode}`;
+      }
+
+
       const fontFamilyValue = radioStyle.fontFamily ?? RADIO_STYLE_DEFAULTS.fontFamily;
       const actualFontFamily = FONT_FAMILY_FALLBACKS[fontFamilyValue as keyof typeof FONT_FAMILY_FALLBACKS] ?? FONT_FAMILY_FALLBACKS["Inter"];
 
@@ -661,7 +685,7 @@ const ComponentRenderer = ({ component }: ComponentRendererProps) => {
           <input 
             id={radioId}
             type="radio"
-            name={name !== "" ? name : undefined}
+            name={runtimeName}
             value={value}
             required={required}
             defaultChecked={defaultChecked}

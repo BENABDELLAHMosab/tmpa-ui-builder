@@ -1125,7 +1125,7 @@ const BuilderPage = () => {
                   boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
                   borderRadius: 'var(--radius-md)'
                 }}>
-                  <ComponentRenderer component={activeComp} />
+                  <ComponentRenderer component={activeComp} components={components} mode="builder" />
                 </div>
               );
             }
