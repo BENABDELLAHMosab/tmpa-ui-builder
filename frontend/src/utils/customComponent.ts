@@ -4,7 +4,8 @@ import type { CustomComponentTemplate } from '../types/customComponent';
 export const instantiateCustomComponent = (
   template: CustomComponentTemplate,
   dropPosition: { x: number; y: number },
-  zIndex: number
+  zIndex: number,
+  targetParentId: string | null = null
 ): BuilderComponent[] => {
   const idMap = new Map<string, string>();
 
@@ -40,7 +41,7 @@ export const instantiateCustomComponent = (
     };
 
     if (comp.id === template.rootComponentId) {
-      newComp.parentId = null;
+      newComp.parentId = targetParentId;
       if (newComp.layout) {
         newComp.layout.x = dropPosition.x;
         newComp.layout.y = dropPosition.y;

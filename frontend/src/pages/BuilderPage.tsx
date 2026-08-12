@@ -249,57 +249,6 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
   };
 };
 
-const customCollisionDetection = (args: any) => {
-  const pointerCollisions = pointerWithin(args);
-  
-  if (pointerCollisions.length > 0) {
-    const activeData = args.active.data.current;
-    const isSidebar = activeData?.source === 'sidebar';
-    const isCanvas = activeData?.source === 'canvas';
-    const activeType = activeData?.componentType;
-    const isKeyboard = !args.pointerCoordinates;
-
-    if (isSidebar || (isCanvas && !isKeyboard)) {
-      const containers = pointerCollisions.filter(c => String(c.id).startsWith('container-drop-'));
-      if (containers.length > 0) {
-        const sorted = containers.sort((a, b) => {
-          const zA = a.data?.droppableContainer?.data?.current?.zIndex ?? 0;
-          const zB = b.data?.droppableContainer?.data?.current?.zIndex ?? 0;
-          return zB - zA;
-        });
-        return [sorted[0]];
-      }
-      const canvasCollision = pointerCollisions.find(c => c.id === 'builder-canvas');
-      return canvasCollision ? [canvasCollision] : [];
-    } else if (isCanvas && isKeyboard) {
-      if (activeType === 'Container') {
-        return closestCenter({
-          ...args,
-          droppableContainers: args.droppableContainers.filter((c: any) => c.id === 'builder-canvas')
-        });
-      } else {
-        const parentId = activeData?.parentId;
-        if (parentId) {
-          return closestCenter({
-            ...args,
-            droppableContainers: args.droppableContainers.filter((c: any) => c.id === `container-drop-${parentId}`)
-          });
-        } else {
-          return closestCenter({
-            ...args,
-            droppableContainers: args.droppableContainers.filter((c: any) => c.id === 'builder-canvas')
-          });
-        }
-      }
-    } else {
-      return pointerCollisions;
-    }
-  } else if (!args.pointerCoordinates) {
-    return closestCenter(args);
-  }
-  return [];
-};
-
 const moveComponentToParent = (
   components: BuilderComponent[],
   componentId: string,
@@ -367,6 +316,81 @@ const BuilderPage = () => {
     }),
     useSensor(KeyboardSensor)
   );
+
+  const customCollisionDetection = useCallback((args: any) => {
+    let allowedDroppables = args.droppableContainers;
+
+    const activeData = args.active.data.current;
+    const isCanvas = activeData?.source === 'canvas';
+    const activeType = activeData?.componentType;
+    const activeId = args.active.id;
+
+    if (isCanvas && activeType === 'Container') {
+      const forbiddenIds = new Set<string>();
+      forbiddenIds.add(String(activeId));
+      const descendants = getDescendantIds(components, String(activeId));
+      descendants.forEach(id => forbiddenIds.add(id));
+
+      allowedDroppables = args.droppableContainers.filter((c: any) => {
+        const match = String(c.id).match(/^container-drop-(.+)$/);
+        if (match) {
+          const compId = match[1];
+          if (forbiddenIds.has(compId)) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    const newArgs = { ...args, droppableContainers: allowedDroppables };
+    const pointerCollisions = pointerWithin(newArgs);
+    
+    if (pointerCollisions.length > 0) {
+      const isSidebar = activeData?.source === 'sidebar';
+      const isKeyboard = !args.pointerCoordinates;
+
+      if (isSidebar || (isCanvas && !isKeyboard)) {
+        const containers = pointerCollisions.filter(c => String(c.id).startsWith('container-drop-'));
+        if (containers.length > 0) {
+          const sorted = containers.sort((a, b) => {
+            const zA = a.data?.droppableContainer?.data?.current?.zIndex ?? 0;
+            const zB = b.data?.droppableContainer?.data?.current?.zIndex ?? 0;
+            return zB - zA;
+          });
+          return [sorted[0]];
+        }
+        const canvasCollision = pointerCollisions.find(c => c.id === 'builder-canvas');
+        return canvasCollision ? [canvasCollision] : [];
+      } else if (isCanvas && isKeyboard) {
+        if (activeType === 'Container') {
+          return closestCenter({
+            ...newArgs,
+            droppableContainers: allowedDroppables.filter((c: any) => c.id === 'builder-canvas')
+          });
+        } else {
+          const parentId = activeData?.parentId;
+          if (parentId) {
+            return closestCenter({
+              ...newArgs,
+              droppableContainers: allowedDroppables.filter((c: any) => c.id === `container-drop-${parentId}`)
+            });
+          } else {
+            return closestCenter({
+              ...newArgs,
+              droppableContainers: allowedDroppables.filter((c: any) => c.id === 'builder-canvas')
+            });
+          }
+        }
+      } else {
+        return pointerCollisions;
+      }
+    } else if (!args.pointerCoordinates) {
+      return closestCenter(newArgs);
+    }
+    return [];
+  }, [components]);
+
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -740,6 +764,15 @@ const BuilderPage = () => {
             id: comp.id
           };
         }
+      } else if (active.data?.current?.source === 'custom-component') {
+        const rootType = active.data.current.rootType;
+        if (rootType === 'Container') {
+          activeDescriptor = {
+            type: 'Container',
+            width: active.data.current.rootWidth ?? 300,
+            height: active.data.current.rootHeight ?? 60
+          };
+        }
       }
 
       const evaluation = evaluateContainerDrop(components, activeDescriptor, over.data.current.containerId);
@@ -891,33 +924,69 @@ const BuilderPage = () => {
       } else if (active.data?.current?.source === 'custom-component') {
         if (!canvasRef.current || !active.rect.current.translated) return;
         
-        if (isContainerDropData(over.data?.current)) {
-          return;
-        }
-
-        const targetRect = canvasRef.current.getBoundingClientRect();
-        const dropX = active.rect.current.translated.left - targetRect.left;
-        const dropY = active.rect.current.translated.top - targetRect.top;
         const customComponentId = active.data.current.customComponentId;
-
         if (typeof customComponentId !== "string" || customComponentId.trim() === "") {
           setError("Invalid custom component ID");
           setTimeout(() => setError(null), 3000);
           return;
         }
 
+        let targetParentId: string | null = null;
+        let targetRect: { top: number; left: number } = { top: 0, left: 0 };
+        let maxWidth = CANVAS_WIDTH;
+        let maxHeight = CANVAS_HEIGHT;
+
+        if (isContainerDropData(over.data?.current)) {
+          const containerId = over.data.current.containerId;
+          const rootWidth = active.data.current.rootWidth ?? 300;
+          const rootHeight = active.data.current.rootHeight ?? 60;
+          
+          const evaluation = evaluateContainerDrop(components, { type: 'Container', width: rootWidth, height: rootHeight }, containerId);
+          if (!evaluation.valid) return;
+          
+          const container = components.find(c => c.id === containerId);
+          if (!container || !over.rect) return;
+
+          targetParentId = containerId;
+          const borderWidth = typeof container.style?.borderWidth === 'number' 
+              ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+          const { innerWidth, innerHeight } = getContainerInnerDimensions(
+            container.layout?.width ?? 300,
+            container.layout?.height ?? 60,
+            borderWidth
+          );
+          
+          targetRect = over.rect;
+          maxWidth = innerWidth;
+          maxHeight = innerHeight;
+        } else if (over.id === 'builder-canvas' || over.data?.current?.dropType === 'canvas') {
+          targetRect = canvasRef.current.getBoundingClientRect();
+        } else {
+          return;
+        }
+
+        const dropX = active.rect.current.translated.left - targetRect.left;
+        const dropY = active.rect.current.translated.top - targetRect.top;
+        
+        const rootWidth = active.data.current.rootWidth ?? 300;
+        const rootHeight = active.data.current.rootHeight ?? 60;
+
+        const nextX = Math.round(clamp(dropX, 0, Math.max(0, maxWidth - rootWidth)));
+        const nextY = Math.round(clamp(dropY, 0, Math.max(0, maxHeight - rootHeight)));
+
         const executeCustomComponentDrop = async () => {
           try {
             const detail = await customComponentService.getCustomComponent(customComponentId);
             setComponents(prev => {
-              const zIndex = getHighestZIndex(prev, null) + 1;
+              const zIndex = getHighestZIndex(prev, targetParentId) + 1;
               const instantiatedComponents = instantiateCustomComponent(
                 detail.template,
-                { x: Math.max(0, dropX), y: Math.max(0, dropY) },
-                zIndex
+                { x: nextX, y: nextY },
+                zIndex,
+                targetParentId
               );
               if (instantiatedComponents.length > 0) {
-                const newRootId = instantiatedComponents.find(c => c.parentId === null)?.id;
+                const newRootId = instantiatedComponents.find(c => c.parentId === targetParentId)?.id;
                 if (newRootId) {
                   // Hack to set selected component id after state update in async context
                   setTimeout(() => setSelectedComponentId(newRootId), 0);

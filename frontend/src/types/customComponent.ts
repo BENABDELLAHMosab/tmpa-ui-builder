@@ -9,6 +9,9 @@ export interface CustomComponentSummary {
   id: string;
   name: string;
   description: string;
+  rootType: string;
+  rootWidth?: number;
+  rootHeight?: number;
   createdAt: string;
   updatedAt: string;
 }

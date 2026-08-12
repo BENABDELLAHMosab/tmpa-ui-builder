@@ -138,10 +138,34 @@ export const createCustomComponent = async (data: { ownerId: string; name: strin
 
 export const listCustomComponents = async (ownerId: string) => {
   const components = await CustomComponent.find({ ownerId })
-    .select('id name description createdAt updatedAt')
+    .select('_id name description createdAt updatedAt template')
     .sort({ createdAt: -1 })
     .lean();
-  return components;
+
+  return components.map((comp: any) => {
+    const { template, _id, ...rest } = comp;
+    
+    let rootType = 'Container';
+    let rootWidth = undefined;
+    let rootHeight = undefined;
+    
+    if (template && template.rootComponentId && Array.isArray(template.components)) {
+      const rootComp = template.components.find((c: any) => c.id === template.rootComponentId);
+      if (rootComp) {
+        rootType = rootComp.type;
+        rootWidth = rootComp.props?.style?.width;
+        rootHeight = rootComp.props?.style?.height;
+      }
+    }
+    
+    return {
+      id: _id.toString(),
+      ...rest,
+      rootType,
+      rootWidth,
+      rootHeight
+    };
+  });
 };
 
 export const getCustomComponent = async (id: string, ownerId: string) => {

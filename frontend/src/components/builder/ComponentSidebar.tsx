@@ -83,7 +83,10 @@ const DraggableCustomComponent = ({ customComponent }: DraggableCustomComponentP
     data: {
       source: "custom-component",
       customComponentId: customComponent.id,
-      name: customComponent.name
+      name: customComponent.name,
+      rootType: customComponent.rootType,
+      rootWidth: customComponent.rootWidth,
+      rootHeight: customComponent.rootHeight
     },
   });
 
