@@ -157,6 +157,8 @@ interface DraggableContainerItemProps extends DraggableCanvasItemProps {
   isChildSelected: boolean;
   globalSelectedComponentId: string | null;
   dragTargetState: DragTargetState | null;
+  componentsByParent: Map<string | null, BuilderComponent[]>;
+  checkChildSelected: (containerId: string) => boolean;
 }
 
 const DraggableContainerItem = ({
@@ -170,7 +172,9 @@ const DraggableContainerItem = ({
   maxHeight,
   isChildSelected,
   globalSelectedComponentId,
-  dragTargetState
+  dragTargetState,
+  componentsByParent,
+  checkChildSelected
 }: DraggableContainerItemProps) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
@@ -264,12 +268,13 @@ const DraggableContainerItem = ({
     top: comp.layout?.y ?? 0,
     width: comp.layout?.width ?? 300,
     height: comp.layout?.height ?? 60,
-    transform: CSS.Translate.toString(transform),
+    transform: isDragging ? undefined : CSS.Translate.toString(transform),
     zIndex: displayedZIndex,
     padding: 0,
     border: 'none',
     transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    opacity: isDragging ? 0.3 : 1
   };
   
   const borderWidth = typeof comp.style?.borderWidth === "number" && Number.isFinite(comp.style?.borderWidth) 
@@ -328,16 +333,35 @@ const DraggableContainerItem = ({
         }}
       >
         {childrenComponents.map(child => (
-          <DraggableCanvasItem
-            key={child.id}
-            comp={child}
-            isSelected={child.id === globalSelectedComponentId}
-            interactionZIndex={interactionZIndex}
-            onSelectComponent={onSelectComponent}
-            onResizeComponent={onResizeComponent}
-            maxWidth={innerWidth - (child.layout?.x ?? 0)}
-            maxHeight={innerHeight - (child.layout?.y ?? 0)}
-          />
+          child.type === 'Container' ? (
+            <DraggableContainerItem
+              key={child.id}
+              comp={child}
+              childrenComponents={componentsByParent.get(child.id) || []}
+              isSelected={child.id === globalSelectedComponentId}
+              interactionZIndex={interactionZIndex}
+              onSelectComponent={onSelectComponent}
+              onResizeComponent={onResizeComponent}
+              maxWidth={innerWidth - (child.layout?.x ?? 0)}
+              maxHeight={innerHeight - (child.layout?.y ?? 0)}
+              isChildSelected={checkChildSelected(child.id)}
+              globalSelectedComponentId={globalSelectedComponentId}
+              dragTargetState={dragTargetState}
+              componentsByParent={componentsByParent}
+              checkChildSelected={checkChildSelected}
+            />
+          ) : (
+            <DraggableCanvasItem
+              key={child.id}
+              comp={child}
+              isSelected={child.id === globalSelectedComponentId}
+              interactionZIndex={interactionZIndex}
+              onSelectComponent={onSelectComponent}
+              onResizeComponent={onResizeComponent}
+              maxWidth={innerWidth - (child.layout?.x ?? 0)}
+              maxHeight={innerHeight - (child.layout?.y ?? 0)}
+            />
+          )
         ))}
       </div>
       
@@ -444,6 +468,8 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
                   maxWidth={CANVAS_WIDTH - (comp.layout?.x ?? 0)}
                   maxHeight={CANVAS_HEIGHT - (comp.layout?.y ?? 0)}
                   dragTargetState={dragTargetState}
+                  componentsByParent={componentsByParent}
+                  checkChildSelected={checkChildSelected}
                 />
               );
             }

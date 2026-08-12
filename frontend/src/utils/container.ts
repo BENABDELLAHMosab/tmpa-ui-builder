@@ -22,7 +22,27 @@ export function normalizeComponentParents(
     if (typeof pId !== 'string') return { ...component, parentId: null };
     if (pId === component.id) return { ...component, parentId: null };
     if (!containerIds.has(pId)) return { ...component, parentId: null };
-    if (component.type === 'Container') return { ...component, parentId: null };
+    
+    if (component.type === 'Container') {
+      let currentId: string | null = pId;
+      let hasCycle = false;
+      const visited = new Set<string>();
+      visited.add(component.id);
+      
+      while (currentId && typeof currentId === 'string') {
+        if (visited.has(currentId)) {
+          hasCycle = true;
+          break;
+        }
+        visited.add(currentId);
+        const parentComp = components.find(c => c.id === currentId);
+        currentId = parentComp?.parentId || null;
+      }
+      
+      if (hasCycle) {
+        return { ...component, parentId: null };
+      }
+    }
 
     return component;
   });
@@ -259,6 +279,7 @@ export type ContainerDropActiveDescriptor = {
   type: BuilderComponentType;
   width: number;
   height: number;
+  id?: string;
 };
 
 export type ContainerDropEvaluation =
@@ -297,7 +318,15 @@ export function evaluateContainerDrop(
   }
 
   if (activeDescriptor.type === "Container") {
-    return { valid: false, reason: "container-nesting" };
+    if (activeDescriptor.id) {
+      if (activeDescriptor.id === targetContainerId) {
+        return { valid: false, reason: "container-nesting" };
+      }
+      const descendants = getDescendantIds(components, activeDescriptor.id);
+      if (descendants.has(targetContainerId)) {
+        return { valid: false, reason: "container-nesting" };
+      }
+    }
   }
 
   const safeBorderWidth = getSafeBorderWidth(container.style?.borderWidth);

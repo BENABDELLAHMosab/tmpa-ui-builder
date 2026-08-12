@@ -736,7 +736,8 @@ const BuilderPage = () => {
           activeDescriptor = {
             type: comp.type,
             width: comp.layout?.width ?? MIN_DIMENSIONS_BY_TYPE[comp.type]?.width ?? 50,
-            height: comp.layout?.height ?? MIN_DIMENSIONS_BY_TYPE[comp.type]?.height ?? 20
+            height: comp.layout?.height ?? MIN_DIMENSIONS_BY_TYPE[comp.type]?.height ?? 20,
+            id: comp.id
           };
         }
       }
@@ -790,7 +791,7 @@ const BuilderPage = () => {
           targetRect = canvasRef.current.getBoundingClientRect();
         } else if (isContainerDropData(over.data?.current)) {
           const containerId = over.data.current.containerId;
-          const evaluation = evaluateContainerDrop(components, { type: activeComponent.type, width, height }, containerId);
+          const evaluation = evaluateContainerDrop(components, { type: activeComponent.type, width, height, id: activeComponent.id }, containerId);
           if (!evaluation.valid) return;
 
           const container = components.find(c => c.id === containerId);
@@ -1045,7 +1046,7 @@ const BuilderPage = () => {
           ) : null}
           {activeCanvasComponentId ? (() => {
             const activeComp = components.find(c => c.id === activeCanvasComponentId);
-            if (activeComp && activeComp.type !== 'Container') {
+            if (activeComp) {
               return (
                 <div style={{
                   width: activeComp.layout?.width ?? 300,
