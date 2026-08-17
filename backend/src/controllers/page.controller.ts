@@ -21,27 +21,11 @@ export const createPage = async (req: Request, res: Response): Promise<void> => 
       ownerId: req.user?.id,
       status: "draft",
       schema,
-      version: 1,
+      version: 0,
       contentHash
     });
 
     const savedPage = await newPage.save();
-
-    try {
-      await PageVersion.create({
-        pageId: savedPage._id,
-        versionNumber: 1,
-        schemaSnapshot: cloneJsonValue(schema),
-        contentHash,
-        createdBy: req.user?.id,
-        reason: "initial"
-      });
-    } catch (err: any) {
-      await savedPage.deleteOne();
-      console.error("Failed to create initial PageVersion, rolling back page creation:", err);
-      res.status(500).json({ error: "Failed to create page version" });
-      return;
-    }
 
     res.status(201).json(savedPage);
   } catch (error: any) {
@@ -99,6 +83,52 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
 
     if (incomingSchema !== undefined) {
       incomingHash = generateContentHash(incomingSchema);
+
+      if (page.version === 0) {
+        if (!incomingSchema.components || incomingSchema.components.length === 0) {
+          res.status(400).json({ error: "Page is empty. Add at least one component before saving." });
+          return;
+        }
+
+        let tempVersion;
+        try {
+          tempVersion = await PageVersion.create({
+            pageId: page._id,
+            versionNumber: 1,
+            schemaSnapshot: cloneJsonValue(incomingSchema),
+            contentHash: incomingHash,
+            createdBy: req.user?.id,
+            reason: "manual-save"
+          });
+        } catch (err: any) {
+          res.status(500).json({ error: "Failed to create first page version" });
+          return;
+        }
+
+        const updatedPage = await Page.findOneAndUpdate(
+          { _id: page._id, version: 0 },
+          {
+            $set: {
+              schema: incomingSchema,
+              contentHash: incomingHash,
+              version: 1,
+              ...(name !== undefined ? { name } : {}),
+              ...(description !== undefined ? { description } : {})
+            }
+          },
+          { new: true, runValidators: true }
+        );
+
+        if (!updatedPage) {
+          await PageVersion.findByIdAndDelete(tempVersion._id);
+          res.status(409).json({ error: "Conflict: The page was modified by another request. Please reload." });
+          return;
+        }
+
+        res.json(updatedPage);
+        return;
+      }
+
       const currentHash = page.contentHash || generateContentHash(page.schema);
       if (incomingHash !== currentHash) {
         schemaChanged = true;
@@ -118,7 +148,7 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
     }
 
     const versionCount = await PageVersion.countDocuments({ pageId: page._id });
-    if (versionCount === 0) {
+    if (versionCount === 0 && page.version > 0) {
       const currentHash = page.contentHash || generateContentHash(page.schema);
       const baselineVersionNumber = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
       
@@ -218,6 +248,11 @@ export const submitPage = async (req: Request, res: Response): Promise<void> => 
 
     if (page.status !== "draft") {
       res.status(400).json({ error: "Only draft pages can be submitted" });
+      return;
+    }
+
+    if (page.version === 0) {
+      res.status(400).json({ error: "Save the page before submitting it." });
       return;
     }
 

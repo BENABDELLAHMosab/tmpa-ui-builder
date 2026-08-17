@@ -620,6 +620,11 @@ const BuilderPage = () => {
   const handleSave = async () => {
     if (!pageId || !page) return;
 
+    if (page.version === 0 && components.length === 0) {
+      setError("Page is empty. Add at least one component before saving.");
+      return;
+    }
+
     try {
       setSaving(true);
       setError(null);

@@ -33,7 +33,7 @@ const pageSchema: Schema = new Schema(
     publishedAt: { type: Date },
     publishedVersionNumber: { type: Number },
     schema: { type: Schema.Types.Mixed, default: { components: [] } },
-    version: { type: Number, default: 1 },
+    version: { type: Number, default: 0 },
     contentHash: { type: String }
   },
   { timestamps: true }

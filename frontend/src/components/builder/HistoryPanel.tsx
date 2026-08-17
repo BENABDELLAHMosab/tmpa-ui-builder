@@ -135,7 +135,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
         )}
 
         {!loading && !error && items.length === 0 && (
-          <div className="history-empty">No versions available.</div>
+          <div className="history-empty">No saved versions yet. Save the page to create Version 1.</div>
         )}
 
         {!loading && !error && items.length > 0 && (
