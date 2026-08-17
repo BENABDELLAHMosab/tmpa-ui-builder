@@ -83,6 +83,8 @@ export type BuilderTextareaProps = {
 export type BuilderImageProps = {
   src?: string;
   alt?: string;
+  sourceType?: "url" | "upload";
+  assetId?: string;
 };
 
 export const FONT_FAMILY_FALLBACKS: Record<BuilderFontFamily, string> = {

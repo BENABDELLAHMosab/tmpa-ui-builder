@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { BuilderComponent, BuilderImageObjectFit, BuilderImageProps } from '../../types/page';
 import { FONT_FAMILY_FALLBACKS } from '../../types/page';
 import { TABLE_STYLE_DEFAULTS } from '../../utils/table';
@@ -9,11 +9,14 @@ import { TEXTAREA_STYLE_DEFAULTS } from '../../utils/textarea';
 import { IMAGE_STYLE_DEFAULTS, isBuilderImageObjectFit } from '../../utils/image';
 import { DIVIDER_STYLE_DEFAULTS, isBuilderBorderStyle } from '../../utils/divider';
 import ContainerFrame from './ContainerFrame';
+import { assetService } from '../../services/asset.service';
 
 type RenderedImageProps = {
   componentId: string;
   src: string;
   alt: string;
+  sourceType?: "url" | "upload";
+  assetId?: string;
   objectFit: BuilderImageObjectFit;
   backgroundColor: string;
   borderColor: string;
@@ -25,6 +28,8 @@ function RenderedImage({
   componentId,
   src,
   alt,
+  sourceType,
+  assetId,
   objectFit,
   backgroundColor,
   borderColor,
@@ -32,9 +37,50 @@ function RenderedImage({
   borderRadius
 }: RenderedImageProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const normalizedSrc = src.trim();
-  const hasError = normalizedSrc !== "" && failedSrc === normalizedSrc;
+  useEffect(() => {
+    let active = true;
+
+    if (sourceType === "upload" && assetId) {
+      setIsLoading(true);
+      setFailedSrc(null);
+      assetService.getAssetBlob(assetId)
+        .then(blob => {
+          if (active) {
+            const url = URL.createObjectURL(blob);
+            setBlobUrl(url);
+            setIsLoading(false);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setFailedSrc(assetId);
+            setIsLoading(false);
+          }
+        });
+    } else {
+      setBlobUrl(null);
+      setIsLoading(false);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [sourceType, assetId]);
+
+  useEffect(() => {
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [blobUrl]);
+
+  const displaySrc = sourceType === "upload" ? blobUrl || "" : src.trim();
+  const hasError = (sourceType === "upload" && failedSrc === assetId) || (sourceType !== "upload" && displaySrc !== "" && failedSrc === displaySrc);
+  const isPending = sourceType === "upload" && isLoading;
 
   return (
     <div
@@ -53,7 +99,22 @@ function RenderedImage({
         borderRadius,
       }}
     >
-      {normalizedSrc === "" ? (
+      {isPending ? (
+        <div 
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            width: '100%', 
+            height: '100%',
+            color: 'rgba(0,0,0,0.4)',
+            fontSize: 12,
+            fontWeight: 500
+          }}
+        >
+          Loading...
+        </div>
+      ) : displaySrc === "" ? (
         <div 
           style={{ 
             display: 'flex', 
@@ -96,11 +157,15 @@ function RenderedImage({
         </div>
       ) : (
         <img
-          key={normalizedSrc}
-          src={normalizedSrc}
+          key={displaySrc}
+          src={displaySrc}
           alt={alt}
           draggable={false}
-          onError={() => setFailedSrc(normalizedSrc)}
+          onError={() => {
+            if (sourceType !== "upload") {
+              setFailedSrc(displaySrc);
+            }
+          }}
           style={{
             display: "block",
             width: "100%",
@@ -813,6 +878,8 @@ const ComponentRenderer = ({ component, components, mode = 'builder' }: Componen
 
       const src = typeof imageProps.src === "string" ? imageProps.src : "";
       const alt = typeof imageProps.alt === "string" ? imageProps.alt : "Image";
+      const sourceType = imageProps.sourceType;
+      const assetId = imageProps.assetId;
       
       const objectFit = isBuilderImageObjectFit(imageStyle.objectFit) 
         ? imageStyle.objectFit 
@@ -828,6 +895,8 @@ const ComponentRenderer = ({ component, components, mode = 'builder' }: Componen
           componentId={component.id}
           src={src}
           alt={alt}
+          sourceType={sourceType}
+          assetId={assetId}
           objectFit={objectFit}
           backgroundColor={backgroundColor}
           borderColor={borderColor}
