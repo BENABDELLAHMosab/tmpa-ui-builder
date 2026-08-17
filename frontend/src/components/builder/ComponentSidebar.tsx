@@ -75,9 +75,11 @@ const DraggableSidebarItem = ({ definition, onClick }: DraggableSidebarItemProps
 
 interface DraggableCustomComponentProps {
   customComponent: CustomComponentSummary;
+  onDeleteClick: (id: string, name: string) => void;
 }
 
-const DraggableCustomComponent = ({ customComponent }: DraggableCustomComponentProps) => {
+const DraggableCustomComponent = ({ customComponent, onDeleteClick }: DraggableCustomComponentProps) => {
+  const [menuOpen, setMenuOpen] = useState(false);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `sidebar-custom-${customComponent.id}`,
     data: {
@@ -99,9 +101,50 @@ const DraggableCustomComponent = ({ customComponent }: DraggableCustomComponentP
         "component-sidebar__item",
         isDragging ? "component-sidebar__item--dragging" : ""
       ].filter(Boolean).join(" ")}
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 12px', gap: '4px', cursor: isDragging ? 'grabbing' : 'grab' }}
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 12px', gap: '4px', cursor: isDragging ? 'grabbing' : 'grab', position: 'relative' }}
+      onMouseLeave={() => setMenuOpen(false)}
     >
-      <span className="component-sidebar__item-label" style={{ fontWeight: 600 }}>{customComponent.name}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+        <span className="component-sidebar__item-label" style={{ fontWeight: 600 }}>{customComponent.name}</span>
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            className="component-sidebar__action-btn"
+            aria-label="Actions"
+            aria-haspopup="true"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMenuOpen(!menuOpen);
+            }}
+          >
+            ⋮
+          </button>
+          {menuOpen && (
+            <div 
+              className="component-sidebar__action-menu"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                className="component-sidebar__action-menu-item component-sidebar__action-menu-item--danger"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onDeleteClick(customComponent.id, customComponent.name);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
       {customComponent.description && (
         <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
           {customComponent.description}
@@ -116,13 +159,15 @@ interface ComponentSidebarProps {
   customComponents: CustomComponentSummary[];
   isLoadingCustomComponents: boolean;
   customComponentsError: string | null;
+  onDeleteCustomComponent: (id: string, name: string) => void;
 }
 
 const ComponentSidebar = ({ 
   onAddComponent,
   customComponents,
   isLoadingCustomComponents,
-  customComponentsError
+  customComponentsError,
+  onDeleteCustomComponent
 }: ComponentSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -175,7 +220,11 @@ const ComponentSidebar = ({
             <p className="component-sidebar__empty" style={{ fontSize: '13px', color: '#94a3b8' }}>No custom components yet</p>
           ) : (
             customComponents.map((comp) => (
-              <DraggableCustomComponent key={comp.id} customComponent={comp} />
+              <DraggableCustomComponent 
+                key={comp.id} 
+                customComponent={comp} 
+                onDeleteClick={onDeleteCustomComponent}
+              />
             ))
           )}
         </div>

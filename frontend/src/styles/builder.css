@@ -219,6 +219,71 @@
   margin: 0;
 }
 
+/* Sidebar Actions Menu */
+.component-sidebar__action-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  opacity: 0;
+}
+
+.component-sidebar__item:hover .component-sidebar__action-btn,
+.component-sidebar__action-btn:focus-visible {
+  opacity: 1;
+}
+
+.component-sidebar__action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+.component-sidebar__action-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 120px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+
+.component-sidebar__action-menu-item {
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.component-sidebar__action-menu-item:hover {
+  background: #334155;
+}
+
+.component-sidebar__action-menu-item--danger:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
 .builder-canvas-container {
   flex: 1;
   padding: 2rem;

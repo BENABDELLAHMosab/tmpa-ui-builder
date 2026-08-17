@@ -64,5 +64,19 @@ export const customComponentService = {
     }
 
     return response.json();
+  },
+
+  deleteCustomComponent: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/custom-components/${id}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error: any = new Error(errorData.error || "Failed to delete custom component");
+      error.status = response.status;
+      throw error;
+    }
   }
 };

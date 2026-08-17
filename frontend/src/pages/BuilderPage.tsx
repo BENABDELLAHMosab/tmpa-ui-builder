@@ -11,6 +11,7 @@ import PropertiesPanel from '../components/builder/PropertiesPanel';
 import HistoryPanel from '../components/builder/HistoryPanel';
 import ComponentRenderer from '../components/renderers/ComponentRenderer';
 import SaveCustomComponentModal from '../components/builder/SaveCustomComponentModal';
+import DeleteCustomComponentModal from '../components/builder/DeleteCustomComponentModal';
 import '../styles/builder.css';
 import {
   DndContext,
@@ -307,6 +308,10 @@ const BuilderPage = () => {
   const [customComponents, setCustomComponents] = useState<CustomComponentSummary[]>([]);
   const [isLoadingCustomComponents, setIsLoadingCustomComponents] = useState<boolean>(false);
   const [customComponentsError, setCustomComponentsError] = useState<string | null>(null);
+
+  const [selectedCustomComponentToDelete, setSelectedCustomComponentToDelete] = useState<{id: string, name: string} | null>(null);
+  const [isDeletingCustomComponent, setIsDeletingCustomComponent] = useState<boolean>(false);
+  const [deleteCustomComponentError, setDeleteCustomComponentError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -706,6 +711,30 @@ const BuilderPage = () => {
     }
   };
 
+  const handleDeleteCustomComponentClick = (id: string, name: string) => {
+    setSelectedCustomComponentToDelete({ id, name });
+    setDeleteCustomComponentError(null);
+  };
+
+  const handleConfirmDeleteCustomComponent = async () => {
+    if (!selectedCustomComponentToDelete) return;
+    try {
+      setIsDeletingCustomComponent(true);
+      setDeleteCustomComponentError(null);
+      await customComponentService.deleteCustomComponent(selectedCustomComponentToDelete.id);
+      
+      // Pessimistic update: remove from list after success
+      setCustomComponents(prev => prev.filter(comp => comp.id !== selectedCustomComponentToDelete.id));
+      setSelectedCustomComponentToDelete(null);
+      setSuccessMessage("Component deleted successfully");
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setDeleteCustomComponentError(err.message || "Failed to delete custom component");
+    } finally {
+      setIsDeletingCustomComponent(false);
+    }
+  };
+
   const resetDragState = useCallback(() => {
     setActiveSidebarType(null);
     setActiveCanvasComponentId(null);
@@ -1068,6 +1097,7 @@ const BuilderPage = () => {
             customComponents={customComponents}
             isLoadingCustomComponents={isLoadingCustomComponents}
             customComponentsError={customComponentsError}
+            onDeleteCustomComponent={handleDeleteCustomComponentClick}
           />
           
           <BuilderCanvas 
@@ -1141,6 +1171,20 @@ const BuilderPage = () => {
           onSave={handleSaveCustomComponent}
           isSaving={saveComponentIsSaving}
           error={saveComponentError}
+        />
+      )}
+
+      {selectedCustomComponentToDelete && (
+        <DeleteCustomComponentModal
+          componentName={selectedCustomComponentToDelete.name}
+          onClose={() => {
+            if (!isDeletingCustomComponent) {
+              setSelectedCustomComponentToDelete(null);
+            }
+          }}
+          onConfirm={handleConfirmDeleteCustomComponent}
+          isDeleting={isDeletingCustomComponent}
+          error={deleteCustomComponentError}
         />
       )}
     </DndContext>
