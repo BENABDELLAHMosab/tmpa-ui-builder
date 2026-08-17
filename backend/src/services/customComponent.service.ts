@@ -42,14 +42,6 @@ function validateAndNormalizeTemplate(template: any): any {
     throw new Error('Root component must be of type "Container"');
   }
 
-  for (const comp of clonedComponents) {
-    if (comp.id !== rootComponentId) {
-      if (comp.parentId && !componentMap.has(comp.parentId)) {
-        throw new Error(`Component ${comp.id} references a missing parentId: ${comp.parentId}`);
-      }
-    }
-  }
-
   // Normalize root component
   rootComponent.parentId = null;
   
@@ -58,6 +50,35 @@ function validateAndNormalizeTemplate(template: any): any {
   }
   rootComponent.layout.x = 0;
   rootComponent.layout.y = 0;
+
+  for (const comp of clonedComponents) {
+    if (comp.id === rootComponentId) continue;
+
+    if (comp.parentId === comp.id) {
+      throw new Error(`Component ${comp.id} cannot be its own parent`);
+    }
+
+    let current = comp;
+    const path = new Set<string>();
+
+    while (current.id !== rootComponentId) {
+      if (path.has(current.id)) {
+        throw new Error(`Cycle detected involving component ${current.id}`);
+      }
+      path.add(current.id);
+
+      if (!current.parentId) {
+        throw new Error(`Component ${comp.id} is detached from root component`);
+      }
+
+      const parent = componentMap.get(current.parentId);
+      if (!parent) {
+        throw new Error(`Component ${current.id} references a missing parentId: ${current.parentId}`);
+      }
+
+      current = parent;
+    }
+  }
 
   return {
     rootComponentId,

@@ -25,9 +25,16 @@ export function canonicalizeCustomComponentTemplate(template: any): any {
     }
   }
 
+  const visiting = new Set<string>();
+
   function buildNode(nodeId: string, isRoot: boolean): any {
+    if (visiting.has(nodeId)) {
+      throw new Error(`Cycle detected during hash generation for component ${nodeId}`);
+    }
     const original = componentMap.get(nodeId);
     if (!original) return null;
+
+    visiting.add(nodeId);
 
     // Clone to avoid mutation
     const canonical = JSON.parse(JSON.stringify(original));
@@ -64,6 +71,7 @@ export function canonicalizeCustomComponentTemplate(template: any): any {
 
     canonical.children = canonicalChildren;
 
+    visiting.delete(nodeId);
     return canonical;
   }
 
