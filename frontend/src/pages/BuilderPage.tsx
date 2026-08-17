@@ -12,6 +12,7 @@ import HistoryPanel from '../components/builder/HistoryPanel';
 import ComponentRenderer from '../components/renderers/ComponentRenderer';
 import SaveCustomComponentModal from '../components/builder/SaveCustomComponentModal';
 import DeleteCustomComponentModal from '../components/builder/DeleteCustomComponentModal';
+import EditCustomComponentModal from '../components/builder/EditCustomComponentModal';
 import '../styles/builder.css';
 import {
   DndContext,
@@ -312,6 +313,10 @@ const BuilderPage = () => {
   const [selectedCustomComponentToDelete, setSelectedCustomComponentToDelete] = useState<{id: string, name: string} | null>(null);
   const [isDeletingCustomComponent, setIsDeletingCustomComponent] = useState<boolean>(false);
   const [deleteCustomComponentError, setDeleteCustomComponentError] = useState<string | null>(null);
+
+  const [selectedCustomComponentToEdit, setSelectedCustomComponentToEdit] = useState<{id: string, name: string, description: string} | null>(null);
+  const [isEditingCustomComponent, setIsEditingCustomComponent] = useState<boolean>(false);
+  const [editCustomComponentError, setEditCustomComponentError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -735,6 +740,38 @@ const BuilderPage = () => {
     }
   };
 
+  const handleEditCustomComponentClick = (id: string, name: string, description: string) => {
+    setSelectedCustomComponentToEdit({ id, name, description });
+    setEditCustomComponentError(null);
+  };
+
+  const handleSaveEditCustomComponent = async (name: string, description: string) => {
+    if (!selectedCustomComponentToEdit) return;
+    try {
+      setIsEditingCustomComponent(true);
+      setEditCustomComponentError(null);
+      const updatedComponent = await customComponentService.updateCustomComponentMetadata(selectedCustomComponentToEdit.id, { name, description });
+      
+      // Pessimistic update
+      setCustomComponents(prev => prev.map(comp => 
+        comp.id === updatedComponent.id 
+          ? { ...comp, name: updatedComponent.name, description: updatedComponent.description, updatedAt: updatedComponent.updatedAt } 
+          : comp
+      ));
+      setSelectedCustomComponentToEdit(null);
+      setSuccessMessage("Component updated successfully");
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      if (err.status === 409 || err.code === 'DUPLICATE_KEY') {
+        setEditCustomComponentError("You already have a component with this name.");
+      } else {
+        setEditCustomComponentError(err.message || "Failed to update custom component");
+      }
+    } finally {
+      setIsEditingCustomComponent(false);
+    }
+  };
+
   const resetDragState = useCallback(() => {
     setActiveSidebarType(null);
     setActiveCanvasComponentId(null);
@@ -1097,6 +1134,7 @@ const BuilderPage = () => {
             customComponents={customComponents}
             isLoadingCustomComponents={isLoadingCustomComponents}
             customComponentsError={customComponentsError}
+            onEditCustomComponent={handleEditCustomComponentClick}
             onDeleteCustomComponent={handleDeleteCustomComponentClick}
           />
           
@@ -1185,6 +1223,21 @@ const BuilderPage = () => {
           onConfirm={handleConfirmDeleteCustomComponent}
           isDeleting={isDeletingCustomComponent}
           error={deleteCustomComponentError}
+        />
+      )}
+
+      {selectedCustomComponentToEdit && (
+        <EditCustomComponentModal
+          initialName={selectedCustomComponentToEdit.name}
+          initialDescription={selectedCustomComponentToEdit.description}
+          onClose={() => {
+            if (!isEditingCustomComponent) {
+              setSelectedCustomComponentToEdit(null);
+            }
+          }}
+          onSave={handleSaveEditCustomComponent}
+          isSaving={isEditingCustomComponent}
+          error={editCustomComponentError}
         />
       )}
     </DndContext>

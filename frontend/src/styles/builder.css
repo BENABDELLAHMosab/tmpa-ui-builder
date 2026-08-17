@@ -999,11 +999,17 @@
 }
 
 .save-custom-modal__btn-save:hover:not(:disabled) {
-  background: var(--navy-700);
+  background: var(--navy-850);
 }
 
-.save-custom-modal__btn-cancel:disabled,
+.save-custom-modal__btn-cancel:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .save-custom-modal__btn-save:disabled {
+  background-color: var(--navy-800);
+  color: #ffffff;
   opacity: 0.65;
   cursor: not-allowed;
 }

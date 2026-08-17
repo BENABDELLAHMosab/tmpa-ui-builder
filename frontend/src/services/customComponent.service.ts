@@ -78,5 +78,27 @@ export const customComponentService = {
       error.status = response.status;
       throw error;
     }
+  },
+
+  updateCustomComponentMetadata: async (id: string, updates: { name?: string; description?: string }): Promise<CustomComponentSummary> => {
+    const response = await fetch(`${API_URL}/custom-components/${id}`, {
+      method: "PATCH",
+      headers: getHeaders(),
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error: any = new Error(errorData.error || "Failed to update custom component metadata");
+      error.status = response.status;
+      if (errorData.code) error.code = errorData.code;
+      throw error;
+    }
+
+    const data = await response.json();
+    return {
+      ...data,
+      id: data.id ?? data._id
+    };
   }
 };

@@ -75,10 +75,11 @@ const DraggableSidebarItem = ({ definition, onClick }: DraggableSidebarItemProps
 
 interface DraggableCustomComponentProps {
   customComponent: CustomComponentSummary;
+  onEditClick: (id: string, name: string, description: string) => void;
   onDeleteClick: (id: string, name: string) => void;
 }
 
-const DraggableCustomComponent = ({ customComponent, onDeleteClick }: DraggableCustomComponentProps) => {
+const DraggableCustomComponent = ({ customComponent, onEditClick, onDeleteClick }: DraggableCustomComponentProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `sidebar-custom-${customComponent.id}`,
@@ -131,6 +132,18 @@ const DraggableCustomComponent = ({ customComponent, onDeleteClick }: DraggableC
             >
               <button
                 type="button"
+                className="component-sidebar__action-menu-item"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onEditClick(customComponent.id, customComponent.name, customComponent.description || "");
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
                 className="component-sidebar__action-menu-item component-sidebar__action-menu-item--danger"
                 onClick={(e) => {
                   e.preventDefault();
@@ -159,6 +172,7 @@ interface ComponentSidebarProps {
   customComponents: CustomComponentSummary[];
   isLoadingCustomComponents: boolean;
   customComponentsError: string | null;
+  onEditCustomComponent: (id: string, name: string, description: string) => void;
   onDeleteCustomComponent: (id: string, name: string) => void;
 }
 
@@ -167,6 +181,7 @@ const ComponentSidebar = ({
   customComponents,
   isLoadingCustomComponents,
   customComponentsError,
+  onEditCustomComponent,
   onDeleteCustomComponent
 }: ComponentSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -223,6 +238,7 @@ const ComponentSidebar = ({
               <DraggableCustomComponent 
                 key={comp.id} 
                 customComponent={comp} 
+                onEditClick={onEditCustomComponent}
                 onDeleteClick={onDeleteCustomComponent}
               />
             ))
