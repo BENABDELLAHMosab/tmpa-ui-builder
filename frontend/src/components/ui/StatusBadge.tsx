@@ -5,7 +5,7 @@ interface StatusBadgeProps {
 
 const StatusBadge = ({ status }: StatusBadgeProps) => {
   const normalizedStatus = String(status ?? "").toUpperCase();
-
+  
   let bgColor = 'var(--color-draft-bg)';
   let color = 'var(--color-draft)';
   let displayStatus = normalizedStatus;
@@ -65,6 +65,54 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
         display: 'inline-block',
         whiteSpace: 'nowrap',
         textAlign: 'center'
+      }}
+    >
+      {displayStatus}
+    </span>
+  );
+};
+
+export const ReviewStatusBadge = ({ status }: StatusBadgeProps) => {
+  const normalizedStatus = String(status ?? "").toLowerCase();
+  
+  let color = 'var(--text-secondary)';
+  let displayStatus = normalizedStatus.toUpperCase();
+
+  switch (normalizedStatus) {
+    case 'submitted':
+      color = '#60a5fa'; // blue-400
+      displayStatus = 'IN REVIEW';
+      break;
+    case 'approved':
+      color = '#34d399'; // emerald-400
+      displayStatus = 'APPROVED';
+      break;
+    case 'changes_requested':
+      color = '#ef4444'; // red-500
+      displayStatus = 'CHANGES REQUESTED';
+      break;
+    case 'superseded':
+      color = '#94a3b8'; // slate-400
+      displayStatus = 'SUPERSEDED';
+      break;
+    default:
+      break;
+  }
+
+  // Uses the same height/padding layout principles
+  return (
+    <span
+      style={{
+        color: color,
+        fontSize: normalizedStatus === 'changes_requested' ? '0.65rem' : '0.7rem',
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
+        lineHeight: 1,
+        height: '18px', // fixed height to ensure uniformity
       }}
     >
       {displayStatus}
