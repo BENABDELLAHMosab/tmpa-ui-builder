@@ -4,7 +4,7 @@ import { pageService } from '../services/page.service';
 import { getAuthUser, getDashboardPathByRole } from '../utils/authStorage';
 import type { UiPage, BuilderComponent, PageVersionDetail } from '../types/page';
 import PreviewRenderer from '../components/preview/PreviewRenderer';
-import StatusBadge, { ReviewStatusBadge } from '../components/ui/StatusBadge';
+import StatusBadge from '../components/ui/StatusBadge';
 import { normalizePageComponents } from '../utils/normalize';
 import { getPageVersionReasonLabel, formatDate } from '../utils/format';
 import type { PageVersionSummary } from '../types/page';
@@ -66,7 +66,7 @@ const PreviewPage = () => {
             pageService.getPageById(pageId),
             pageService.getPageVersion(pageId, parsedVersion)
           ]);
-          
+
           if (cancelled) return;
 
           setPage(pageData);
@@ -80,9 +80,9 @@ const PreviewPage = () => {
         } else {
           // Priority B – normal route /preview/:pageId
           const data = await pageService.getPageById(pageId);
-          
+
           if (cancelled) return;
-          
+
           setPage(data);
 
           if (data.status === 'published' && data.publishedVersionNumber != null) {
@@ -152,7 +152,7 @@ const PreviewPage = () => {
       setDeletingVersionNumber(vNumber);
       await pageService.deletePageVersion(pageId, vNumber);
       await fetchSidebarData(pageId);
-      
+
       // If we are currently viewing the deleted version, navigate away
       if (isExplicitVersion && historicalVersion?.versionNumber === vNumber) {
         navigate(`/preview/${pageId}`);
@@ -212,13 +212,13 @@ const PreviewPage = () => {
             <img src="/assets/2-TMPA.png" alt="TMPA Logo" style={{ maxWidth: '170px', height: 'auto', objectFit: 'contain' }} />
           </div>
           <h2 style={{ marginLeft: '0.5rem', color: 'var(--text-primary)', margin: 0, fontSize: '1.25rem' }}>{historicalVersion ? historicalVersion.pageName : page?.name}</h2>
-          
+
           {isExplicitVersion && historicalVersion ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '1rem', borderLeft: '1px solid var(--border-primary)', paddingLeft: '1rem' }}>
-               <span style={{ color: 'var(--warning-400)', fontWeight: 600, fontSize: '0.9rem' }}>Viewing version {historicalVersion.versionNumber}</span>
-               <span style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>Read-only</span>
-               {historicalVersion.isCurrent && <span style={{ backgroundColor: 'var(--primary-500)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>Current</span>}
-               <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>• {getPageVersionReasonLabel(historicalVersion.reason)} • {formatDate(historicalVersion.createdAt)} • {historicalVersion.createdBy?.fullName || 'Unknown user'}</span>
+              <span style={{ color: 'var(--warning-400)', fontWeight: 600, fontSize: '0.9rem' }}>Viewing version {historicalVersion.versionNumber}</span>
+              <span style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>Read-only</span>
+              {historicalVersion.isCurrent && <span style={{ backgroundColor: 'var(--primary-500)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>Current</span>}
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>• {getPageVersionReasonLabel(historicalVersion.reason)} • {formatDate(historicalVersion.createdAt)} • {historicalVersion.createdBy?.fullName || 'Unknown user'}</span>
             </div>
           ) : (
             <>
@@ -269,16 +269,16 @@ const PreviewPage = () => {
               const v = review.versionNumber;
               const isSelected = isExplicitVersion
                 ? v === historicalVersion?.versionNumber
-                : v === (page.activeReviewId && typeof page.activeReviewId === 'object' && 'versionNumber' in page.activeReviewId ? page.activeReviewId.versionNumber : undefined);
+                : v === (page.activeReviewId as any)?.versionNumber;
               const targetUrl = `/pages/${pageId}/versions/${v}/preview`;
 
               return (
                 <div key={review._id} style={{ position: 'relative' }}>
-                  <Link 
+                  <Link
                     to={targetUrl}
-                    className="preview-sidebar-item" 
-                    style={{ 
-                      cursor: 'pointer', 
+                    className="preview-sidebar-item"
+                    style={{
+                      cursor: 'pointer',
                       opacity: isSelected ? 1 : 0.6,
                       borderLeft: isSelected ? '3px solid var(--primary-500)' : '1px solid transparent',
                       backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.02)',
@@ -287,27 +287,16 @@ const PreviewPage = () => {
                       justifyContent: 'center',
                       textDecoration: 'none',
                       color: 'white',
-                      padding: '10px 10px'
+                      padding: '10px 15px'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
-                      <span style={{ fontWeight: 600, whiteSpace: 'nowrap', flex: '0 0 auto' }}>Version {v}</span>
-                      <div style={{ marginLeft: 'auto', flex: '0 0 auto', whiteSpace: 'nowrap' }}>
-                        <ReviewStatusBadge status={review.status} />
-                      </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600 }}>Version {v}</span>
+                      {review.status === 'submitted' && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 600 }}>IN REVIEW</span>}
+                      {review.status === 'changes_requested' && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>CHANGES REQUESTED</span>}
+                      {review.status === 'superseded' && <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>SUPERSEDED</span>}
+                      {review.status === 'approved' && <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>APPROVED</span>}
                     </div>
-                    {review.publishedAt && (
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                        <span style={{ 
-                          fontSize: '0.65rem', 
-                          fontWeight: 600, 
-                          color: page.publishedVersionNumber === v ? '#fbbf24' : '#a1a1aa',
-                          letterSpacing: '0.05em' 
-                        }}>
-                          {page.publishedVersionNumber === v ? 'LIVE' : 'PUBLISHED'}
-                        </span>
-                      </div>
-                    )}
                   </Link>
                 </div>
               );
@@ -327,11 +316,11 @@ const PreviewPage = () => {
 
               return (
                 <div key={v} style={{ position: 'relative' }}>
-                  <Link 
+                  <Link
                     to={targetUrl}
-                    className="preview-sidebar-item" 
-                    style={{ 
-                      cursor: 'pointer', 
+                    className="preview-sidebar-item"
+                    style={{
+                      cursor: 'pointer',
                       opacity: isSelected ? 1 : 0.6,
                       borderLeft: isSelected ? '3px solid var(--primary-500)' : '1px solid transparent',
                       backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.02)',

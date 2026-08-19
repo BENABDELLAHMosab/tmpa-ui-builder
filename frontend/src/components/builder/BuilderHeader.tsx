@@ -11,16 +11,15 @@ interface BuilderHeaderProps {
   onUpdateReview?: () => void;
   activeReviewVersion?: number;
   currentVersion?: number;
-  hasUnsavedChanges?: boolean;
   submitting: boolean;
   saving: boolean;
   historyActive: boolean;
 }
 
-const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSubmitForValidation, onUpdateReview, activeReviewVersion, currentVersion, hasUnsavedChanges, submitting, saving, historyActive }: BuilderHeaderProps) => {
+const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSubmitForValidation, onUpdateReview, activeReviewVersion, currentVersion, submitting, saving, historyActive }: BuilderHeaderProps) => {
   const isUnderReview = page.status === 'submitted';
   const isChangesRequested = page.status === 'rejected';
-  
+
   const hasNewerChanges = currentVersion && activeReviewVersion && currentVersion > activeReviewVersion;
   const isPublished = page.publishedVersionNumber != null;
 
@@ -37,12 +36,12 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
         <StatusBadge status={page.status} />
         {isUnderReview && (
           <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
-             IN REVIEW (v{activeReviewVersion})
+            IN REVIEW (v{activeReviewVersion})
           </span>
         )}
         {isChangesRequested && (
           <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold', color: 'var(--color-danger)' }}>
-             REVIEWED v{activeReviewVersion}
+            REVIEWED v{activeReviewVersion}
           </span>
         )}
         {isUnderReview && hasNewerChanges && (
@@ -58,12 +57,12 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
         {isChangesRequested && page.rejectionReason && (
           <>
             <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-primary)', margin: '0 0.5rem' }} />
-            <div 
+            <div
               title={page.rejectionReason}
-              style={{ 
-                maxWidth: '250px', 
-                whiteSpace: 'nowrap', 
-                overflow: 'hidden', 
+              style={{
+                maxWidth: '250px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 fontSize: '0.85rem',
                 color: 'var(--text-secondary)'
@@ -71,7 +70,7 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
             >
               <span style={{ fontWeight: 600 }}>Motif :</span> {page.rejectionReason}
             </div>
-            {(!hasNewerChanges || hasUnsavedChanges) && (
+            {!hasNewerChanges && (
               <span style={{ marginLeft: '8px', fontSize: '12px', color: 'orange' }}>
                 Save your corrections before resubmitting.
               </span>
@@ -100,7 +99,7 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
             {submitting ? 'Updating...' : `Update Review to v${currentVersion}`}
           </button>
         )}
-        {isChangesRequested && hasNewerChanges && !hasUnsavedChanges && (
+        {isChangesRequested && hasNewerChanges && (
           <button
             className="btn btn-warning"
             onClick={onSubmitForValidation}

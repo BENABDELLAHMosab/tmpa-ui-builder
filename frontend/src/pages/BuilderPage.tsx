@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pageService } from '../services/page.service';
 import { customComponentService } from '../services/customComponent.service';
@@ -35,10 +35,10 @@ import { RADIO_STYLE_DEFAULTS } from '../utils/radio';
 import { TEXTAREA_STYLE_DEFAULTS } from '../utils/textarea';
 import { IMAGE_STYLE_DEFAULTS } from '../utils/image';
 import { DIVIDER_STYLE_DEFAULTS } from '../utils/divider';
-import { 
-  CONTAINER_STYLE_DEFAULTS, 
-  normalizeComponentParents, 
-  getContainerInnerDimensions, 
+import {
+  CONTAINER_STYLE_DEFAULTS,
+  normalizeComponentParents,
+  getContainerInnerDimensions,
   getDescendantIds,
   normalizeContainerChildrenLayout,
   getMaxCompatibleContainerBorderWidth,
@@ -61,7 +61,7 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
     height: defaultLayout.height,
     ...(initialZIndex !== undefined ? { zIndex: initialZIndex } : {})
   };
-  
+
   if (type === 'Text') {
     return {
       id: newId,
@@ -87,8 +87,8 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
   let defaultStyle: BuilderComponentStyle | undefined = undefined;
 
   switch (type) {
-    case 'Button': 
-      defaultProps = { label: "Button" }; 
+    case 'Button':
+      defaultProps = { label: "Button" };
       defaultStyle = {
         fontFamily: "Inter",
         fontStyle: "normal",
@@ -144,7 +144,7 @@ const createBuilderComponent = (type: BuilderComponentType, initialX?: number, i
       const col2Id = generateId("column");
       const col3Id = generateId("column");
       const rowId = generateId("row");
-      
+
       defaultProps = {
         columns: [
           { id: col1Id, label: "Column 1" },
@@ -282,7 +282,7 @@ const BuilderPage = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLDivElement>(null);
-  
+
   const [page, setPage] = useState<UiPage | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -293,11 +293,11 @@ const BuilderPage = () => {
   const [activeCanvasComponentId, setActiveCanvasComponentId] = useState<string | null>(null);
   const [activeCustomComponentData, setActiveCustomComponentData] = useState<{ id: string, name: string } | null>(null);
   const [dragTargetState, setDragTargetState] = useState<DragTargetState | null>(null);
-  
+
   type RightPanelMode = "properties" | "history";
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("properties");
   const [historyRefreshToken, setHistoryRefreshToken] = useState(0);
-  
+
   const [saving, setSaving] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
@@ -310,11 +310,11 @@ const BuilderPage = () => {
   const [isLoadingCustomComponents, setIsLoadingCustomComponents] = useState<boolean>(false);
   const [customComponentsError, setCustomComponentsError] = useState<string | null>(null);
 
-  const [selectedCustomComponentToDelete, setSelectedCustomComponentToDelete] = useState<{id: string, name: string} | null>(null);
+  const [selectedCustomComponentToDelete, setSelectedCustomComponentToDelete] = useState<{ id: string, name: string } | null>(null);
   const [isDeletingCustomComponent, setIsDeletingCustomComponent] = useState<boolean>(false);
   const [deleteCustomComponentError, setDeleteCustomComponentError] = useState<string | null>(null);
 
-  const [selectedCustomComponentToEdit, setSelectedCustomComponentToEdit] = useState<{id: string, name: string, description: string} | null>(null);
+  const [selectedCustomComponentToEdit, setSelectedCustomComponentToEdit] = useState<{ id: string, name: string, description: string } | null>(null);
   const [isEditingCustomComponent, setIsEditingCustomComponent] = useState<boolean>(false);
   const [editCustomComponentError, setEditCustomComponentError] = useState<string | null>(null);
 
@@ -355,7 +355,7 @@ const BuilderPage = () => {
 
     const newArgs = { ...args, droppableContainers: allowedDroppables };
     const pointerCollisions = pointerWithin(newArgs);
-    
+
     if (pointerCollisions.length > 0) {
       const isSidebar = activeData?.source === 'sidebar';
       const isKeyboard = !args.pointerCoordinates;
@@ -401,11 +401,6 @@ const BuilderPage = () => {
     return [];
   }, [components]);
 
-  const hasUnsavedChanges = useMemo(() => {
-    if (!page || !page.schema) return false;
-    const cleanComponents = page.schema.components || [];
-    return JSON.stringify(components) !== JSON.stringify(cleanComponents);
-  }, [components, page]);
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -476,7 +471,7 @@ const BuilderPage = () => {
   };
 
   const handleUpdateComponent = (componentId: string, newProps: Record<string, unknown>) => {
-    setComponents(prev => prev.map(comp => 
+    setComponents(prev => prev.map(comp =>
       comp.id === componentId ? { ...comp, props: newProps } : comp
     ));
   };
@@ -499,12 +494,12 @@ const BuilderPage = () => {
       return prev.map(comp =>
         comp.id === componentId
           ? {
-              ...comp,
-              style: {
-                ...(comp.style ?? {}),
-                [key]: finalValue
-              }
+            ...comp,
+            style: {
+              ...(comp.style ?? {}),
+              [key]: finalValue
             }
+          }
           : comp
       );
     });
@@ -518,7 +513,7 @@ const BuilderPage = () => {
     setComponents(prev =>
       prev.map(comp => {
         if (comp.id !== componentId) return comp;
-        
+
         const minDims = MIN_DIMENSIONS_BY_TYPE[comp.type] ?? { width: 50, height: 20 };
         let safeValue = value;
         if (typeof value === 'number') {
@@ -528,7 +523,7 @@ const BuilderPage = () => {
           if (comp.parentId) {
             const parent = prev.find(p => p.id === comp.parentId);
             if (parent) {
-              const borderWidth = typeof parent.style?.borderWidth === 'number' 
+              const borderWidth = typeof parent.style?.borderWidth === 'number'
                 ? Math.max(0, parent.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
               const { innerWidth, innerHeight } = getContainerInnerDimensions(
                 parent.layout?.width ?? 300,
@@ -545,7 +540,7 @@ const BuilderPage = () => {
           else if (key === 'width') safeValue = clamp(value, minDims.width, Math.max(0, maxWidth - (comp.layout?.x ?? 0))) as any;
           else if (key === 'height') safeValue = clamp(value, minDims.height, Math.max(0, maxHeight - (comp.layout?.y ?? 0))) as any;
         }
-        
+
         return {
           ...comp,
           layout: {
@@ -561,7 +556,7 @@ const BuilderPage = () => {
     setComponents(prev =>
       prev.map(comp => {
         if (comp.id !== componentId) return comp;
-        
+
         return {
           ...comp,
           layout: {
@@ -634,23 +629,12 @@ const BuilderPage = () => {
       setSaving(true);
       setError(null);
       setSuccessMessage('');
-      
+
       const updatedPage = await pageService.updatePage(pageId, {
         schema: { ...page.schema, components }
       });
-      
+
       setPage(updatedPage);
-      if (updatedPage.schema && Array.isArray(updatedPage.schema.components)) {
-        setComponents(
-          normalizeComponentLayers(
-            normalizeContainerChildrenLayout(
-              normalizeComponentsLayout(
-                normalizeComponentParents(updatedPage.schema.components as import('../types/page').BuilderComponent[])
-              )
-            )
-          )
-        );
-      }
       setHistoryRefreshToken(prev => prev + 1);
       setSuccessMessage("Page saved successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -668,7 +652,7 @@ const BuilderPage = () => {
       setSubmitting(true);
       setError(null);
       setSuccessMessage('');
-      
+
       const updatedPage = await pageService.submitPage(pageId);
       setPage(updatedPage);
       setSuccessMessage("Page submitted successfully");
@@ -687,7 +671,7 @@ const BuilderPage = () => {
       setSubmitting(true);
       setError(null);
       setSuccessMessage('');
-      
+
       const updatedPage = await pageService.updateReviewToLatest(pageId);
       setPage(updatedPage);
       setSuccessMessage("Review updated successfully");
@@ -722,7 +706,7 @@ const BuilderPage = () => {
 
       // Extract subtree
       const descendantIds = getDescendantIds(components, selectedComponentId);
-      
+
       // Clone components
       const subtreeComponents = components
         .filter(c => descendantIds.has(c.id))
@@ -767,7 +751,7 @@ const BuilderPage = () => {
       setIsDeletingCustomComponent(true);
       setDeleteCustomComponentError(null);
       await customComponentService.deleteCustomComponent(selectedCustomComponentToDelete.id);
-      
+
       // Pessimistic update: remove from list after success
       setCustomComponents(prev => prev.filter(comp => comp.id !== selectedCustomComponentToDelete.id));
       setSelectedCustomComponentToDelete(null);
@@ -791,11 +775,11 @@ const BuilderPage = () => {
       setIsEditingCustomComponent(true);
       setEditCustomComponentError(null);
       const updatedComponent = await customComponentService.updateCustomComponentMetadata(selectedCustomComponentToEdit.id, { name, description });
-      
+
       // Pessimistic update
-      setCustomComponents(prev => prev.map(comp => 
-        comp.id === updatedComponent.id 
-          ? { ...comp, name: updatedComponent.name, description: updatedComponent.description, updatedAt: updatedComponent.updatedAt } 
+      setCustomComponents(prev => prev.map(comp =>
+        comp.id === updatedComponent.id
+          ? { ...comp, name: updatedComponent.name, description: updatedComponent.description, updatedAt: updatedComponent.updatedAt }
           : comp
       ));
       setSelectedCustomComponentToEdit(null);
@@ -823,7 +807,7 @@ const BuilderPage = () => {
     const { active } = event;
     const isSidebarItem = isSidebarDragData(active.data?.current);
     const isCanvasItem = isCanvasDragData(active.data?.current);
-    
+
     if (isSidebarItem && active.data?.current) {
       const type = active.data.current.componentType as BuilderComponentType;
       if (isValidComponentType(type)) {
@@ -882,7 +866,7 @@ const BuilderPage = () => {
       }
 
       const evaluation = evaluateContainerDrop(components, activeDescriptor, over.data.current.containerId);
-      
+
       setDragTargetState(prev => {
         const nextStatus = evaluation.valid ? "valid" : "invalid";
         const targetContainerId = over.data!.current!.containerId;
@@ -913,7 +897,7 @@ const BuilderPage = () => {
         if (!activeComponent || activeComponent.layout?.locked) {
           return;
         }
-        
+
         const translated = active.rect.current.translated;
         if (!translated) return;
 
@@ -935,16 +919,16 @@ const BuilderPage = () => {
 
           const container = components.find(c => c.id === containerId);
           if (!container || !over.rect) return;
-          
+
           targetParentId = containerId;
-          const borderWidth = typeof container.style?.borderWidth === 'number' 
-              ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+          const borderWidth = typeof container.style?.borderWidth === 'number'
+            ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
           const { innerWidth, innerHeight } = getContainerInnerDimensions(
             container.layout?.width ?? 300,
             container.layout?.height ?? 60,
             borderWidth
           );
-          
+
           targetRect = over.rect;
           maxWidth = innerWidth;
           maxHeight = innerHeight;
@@ -953,7 +937,7 @@ const BuilderPage = () => {
         }
 
         if (width > maxWidth || height > maxHeight) {
-          return; 
+          return;
         }
 
         const calculatedX = translated.left - targetRect.left;
@@ -972,32 +956,32 @@ const BuilderPage = () => {
         if (!isValidComponentType(type)) return;
 
         const defaultLayout = DEFAULT_LAYOUTS[type] ?? { width: 300, height: 60 };
-        
+
         let initialX = 24;
         let initialY = 24;
         let parentId: string | null = null;
         let maxWidth = CANVAS_WIDTH;
         let maxHeight = CANVAS_HEIGHT;
-        
+
         if (isContainerDropData(over.data?.current)) {
           const containerId = over.data.current.containerId;
           const evaluation = evaluateContainerDrop(components, { type, width: defaultLayout.width, height: defaultLayout.height }, containerId);
-          
+
           if (evaluation.valid) {
             const container = components.find(c => c.id === containerId);
             if (container && active.rect.current.translated && over.rect) {
-              const borderWidth = typeof container.style?.borderWidth === 'number' 
-                  ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+              const borderWidth = typeof container.style?.borderWidth === 'number'
+                ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
               const { innerWidth, innerHeight } = getContainerInnerDimensions(
                 container.layout?.width ?? 300,
                 container.layout?.height ?? 60,
                 borderWidth
               );
-              
+
               parentId = containerId;
               maxWidth = innerWidth;
               maxHeight = innerHeight;
-              
+
               initialX = active.rect.current.translated.left - over.rect.left;
               initialY = active.rect.current.translated.top - over.rect.top;
             }
@@ -1020,7 +1004,7 @@ const BuilderPage = () => {
         initialY = clamp(initialY, 0, Math.max(0, maxHeight - defaultLayout.height));
 
         const newComponent = createBuilderComponent(type, initialX, initialY, undefined, parentId);
-        
+
         setComponents(prev => {
           const nextZIndex = getHighestZIndex(prev, parentId) + 1;
           newComponent.layout = { ...newComponent.layout, zIndex: nextZIndex };
@@ -1029,7 +1013,7 @@ const BuilderPage = () => {
         setSelectedComponentId(newComponent.id);
       } else if (active.data?.current?.source === 'custom-component') {
         if (!canvasRef.current || !active.rect.current.translated) return;
-        
+
         const customComponentId = active.data.current.customComponentId;
         if (typeof customComponentId !== "string" || customComponentId.trim() === "") {
           setError("Invalid custom component ID");
@@ -1046,22 +1030,22 @@ const BuilderPage = () => {
           const containerId = over.data.current.containerId;
           const rootWidth = active.data.current.rootWidth ?? 300;
           const rootHeight = active.data.current.rootHeight ?? 60;
-          
+
           const evaluation = evaluateContainerDrop(components, { type: 'Container', width: rootWidth, height: rootHeight }, containerId);
           if (!evaluation.valid) return;
-          
+
           const container = components.find(c => c.id === containerId);
           if (!container || !over.rect) return;
 
           targetParentId = containerId;
-          const borderWidth = typeof container.style?.borderWidth === 'number' 
-              ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+          const borderWidth = typeof container.style?.borderWidth === 'number'
+            ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
           const { innerWidth, innerHeight } = getContainerInnerDimensions(
             container.layout?.width ?? 300,
             container.layout?.height ?? 60,
             borderWidth
           );
-          
+
           targetRect = over.rect;
           maxWidth = innerWidth;
           maxHeight = innerHeight;
@@ -1073,7 +1057,7 @@ const BuilderPage = () => {
 
         const dropX = active.rect.current.translated.left - targetRect.left;
         const dropY = active.rect.current.translated.top - targetRect.top;
-        
+
         const rootWidth = active.data.current.rootWidth ?? 300;
         const rootHeight = active.data.current.rootHeight ?? 60;
 
@@ -1143,9 +1127,9 @@ const BuilderPage = () => {
     >
       <div className="builder-layout">
         {page && (
-          <BuilderHeader 
-            page={page} 
-            onBack={() => navigate('/developer/dashboard')} 
+          <BuilderHeader
+            page={page}
+            onBack={() => navigate('/developer/dashboard')}
             onSave={handleSave}
             onPreview={handlePreview}
             onUpdateReview={handleUpdateReview}
@@ -1156,16 +1140,15 @@ const BuilderPage = () => {
             historyActive={rightPanelMode === 'history'}
             activeReviewVersion={page.activeReviewId && typeof page.activeReviewId === 'object' && 'versionNumber' in page.activeReviewId ? page.activeReviewId.versionNumber : undefined}
             currentVersion={page.version}
-            hasUnsavedChanges={hasUnsavedChanges}
           />
         )}
-        
+
         {successMessage && (
           <div className="builder-success-toast">
             {successMessage}
           </div>
         )}
-        
+
         {error && page && (
           <div className="builder-error-toast">
             {error}
@@ -1173,26 +1156,26 @@ const BuilderPage = () => {
         )}
 
         <div className="builder-main">
-          <ComponentSidebar 
-            onAddComponent={handleAddComponent} 
+          <ComponentSidebar
+            onAddComponent={handleAddComponent}
             customComponents={customComponents}
             isLoadingCustomComponents={isLoadingCustomComponents}
             customComponentsError={customComponentsError}
             onEditCustomComponent={handleEditCustomComponentClick}
             onDeleteCustomComponent={handleDeleteCustomComponentClick}
           />
-          
-          <BuilderCanvas 
-            components={components} 
-            selectedComponentId={selectedComponentId} 
+
+          <BuilderCanvas
+            components={components}
+            selectedComponentId={selectedComponentId}
             onSelectComponent={handleSelectComponent}
             onResizeComponent={handleResizeComponent}
             canvasRef={canvasRef}
             dragTargetState={dragTargetState}
           />
-          
+
           {rightPanelMode === 'properties' ? (
-            <PropertiesPanel 
+            <PropertiesPanel
               selectedComponent={selectedComponent}
               onUpdateProps={handleUpdateComponent}
               onUpdateStyle={handleUpdateComponentStyle}
@@ -1247,7 +1230,7 @@ const BuilderPage = () => {
         </DragOverlay>,
         document.body
       )}
-      
+
       {saveComponentModalOpen && (
         <SaveCustomComponentModal
           onClose={() => setSaveComponentModalOpen(false)}
@@ -1288,5 +1271,4 @@ const BuilderPage = () => {
     </DndContext>
   );
 };
-
 export default BuilderPage;

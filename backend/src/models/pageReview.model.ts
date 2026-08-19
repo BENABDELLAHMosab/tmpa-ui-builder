@@ -15,8 +15,6 @@ export interface IPageReview extends Document {
   feedback?: string;
   supersededAt?: Date;
   supersededByReviewId?: mongoose.Types.ObjectId;
-  publishedBy?: mongoose.Types.ObjectId;
-  publishedAt?: Date;
 }
 
 const pageReviewSchema: Schema = new Schema(
@@ -36,9 +34,7 @@ const pageReviewSchema: Schema = new Schema(
     reviewedAt: { type: Date },
     feedback: { type: String },
     supersededAt: { type: Date },
-    supersededByReviewId: { type: Schema.Types.ObjectId, ref: 'PageReview' },
-    publishedBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    publishedAt: { type: Date }
+    supersededByReviewId: { type: Schema.Types.ObjectId, ref: 'PageReview' }
   },
   { timestamps: false }
 );

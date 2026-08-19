@@ -40,7 +40,7 @@ export const getPages = async (req: Request, res: Response): Promise<void> => {
     const pages = await Page.find(query)
       .sort({ updatedAt: -1 })
       .populate('ownerId', 'fullName email')
-      .populate('activeReviewId', 'roundNumber versionNumber status publishedAt');
+      .populate('activeReviewId', 'roundNumber versionNumber status');
     res.json(pages);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
@@ -50,7 +50,7 @@ export const getPages = async (req: Request, res: Response): Promise<void> => {
 export const getPageById = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = await Page.findById(req.params.id)
-      .populate('activeReviewId', 'roundNumber versionNumber status publishedAt');
+      .populate('activeReviewId', 'roundNumber versionNumber status');
     if (!page) {
       res.status(404).json({ error: "Page not found" });
       return;
@@ -154,9 +154,9 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
       if (name !== undefined) page.name = name;
       if (description !== undefined) page.description = description;
       if (incomingSchema !== undefined && !page.contentHash) {
-         page.contentHash = incomingHash;
+        page.contentHash = incomingHash;
       }
-      
+
       await page.save();
       const populatedPage = await Page.findById(page._id).populate('activeReviewId');
       res.json(populatedPage);
@@ -172,7 +172,7 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
         if (versionCount === 0 && page.version > 0) {
           const currentHash = page.contentHash || generateContentHash(page.schema);
           const baselineVersionNumber = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
-          
+
           try {
             await PageVersion.create([{
               pageId: page._id,
@@ -222,7 +222,7 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
         }
 
       });
-      const populatedPage = await Page.findById(updatedPage!._id).populate('activeReviewId');
+      const populatedPage = await Page.findById(updatedPage._id).populate('activeReviewId').session(session);
       res.json(populatedPage);
     } catch (err: any) {
       if (err.message === "CONFLICT") {
@@ -302,7 +302,7 @@ export const submitPage = async (req: Request, res: Response): Promise<void> => 
         { $inc: { reviewRoundCounter: 1 } },
         { new: true, session }
       );
-      
+
       if (!updatedPageDoc) throw new Error("PAGE_NOT_FOUND");
 
       const review = new PageReview({
@@ -346,11 +346,11 @@ export const updateReviewToLatest = async (req: Request, res: Response): Promise
     await session.withTransaction(async () => {
       const page = await Page.findById(req.params.id).session(session);
       if (!page) throw new Error("PAGE_NOT_FOUND");
-      
+
       if (req.user?.role === "user-developer" && page.ownerId.toString() !== req.user.id) {
         throw new Error("ACCESS_DENIED");
       }
-      
+
       if (!page.activeReviewId) throw new Error("MISSING_REVIEW");
 
       const review = await PageReview.findById(page.activeReviewId).session(session);
@@ -417,7 +417,7 @@ export const approvePage = async (req: Request, res: Response): Promise<void> =>
     await session.withTransaction(async () => {
       const page = await Page.findById(req.params.pageId).session(session);
       if (!page) throw new Error("PAGE_NOT_FOUND");
-      
+
       const reviewId = req.params.reviewId;
       if (!page.activeReviewId || page.activeReviewId.toString() !== reviewId) {
         throw new Error("REVIEW_NO_LONGER_ACTIVE");
@@ -466,7 +466,7 @@ export const rejectPage = async (req: Request, res: Response): Promise<void> => 
     await session.withTransaction(async () => {
       const page = await Page.findById(req.params.pageId).session(session);
       if (!page) throw new Error("PAGE_NOT_FOUND");
-      
+
       const reviewId = req.params.reviewId;
       if (!page.activeReviewId || page.activeReviewId.toString() !== reviewId) {
         throw new Error("REVIEW_NO_LONGER_ACTIVE");
@@ -504,80 +504,58 @@ export const rejectPage = async (req: Request, res: Response): Promise<void> => 
 };
 
 export const publishPage = async (req: Request, res: Response): Promise<void> => {
-  const session = await mongoose.startSession();
   try {
     if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ error: "Invalid page ID format" });
       return;
     }
 
-    let updatedPage;
+    const page = await Page.findById(req.params.id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
 
-    await session.withTransaction(async () => {
-      const page = await Page.findById(req.params.id).session(session);
-      if (!page) throw new Error("PAGE_NOT_FOUND");
+    if (page.status !== "approved") {
+      res.status(409).json({ error: "Only approved pages can be published" });
+      return;
+    }
 
-      if (page.status !== "approved") {
-        throw new Error("INVALID_STATUS");
-      }
+    const currentVersion = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
 
-      if (!page.activeReviewId) {
-        throw new Error("MISSING_REVIEW");
-      }
+    const snapshot = await PageVersion.findOne({
+      pageId: page._id,
+      versionNumber: currentVersion
+    }).lean();
 
-      const review = await PageReview.findById(page.activeReviewId).session(session);
-      if (!review) throw new Error("MISSING_REVIEW");
+    if (!snapshot) {
+      res.status(409).json({
+        error: `Cannot publish: no version snapshot found for version ${currentVersion}.`
+      });
+      return;
+    }
 
-      if (review.pageId.toString() !== page._id.toString()) {
-        throw new Error("REVIEW_MISMATCH");
-      }
+    const updatedPage = await Page.findOneAndUpdate(
+      { _id: page._id, status: "approved" },
+      {
+        $set: {
+          status: "published",
+          publishedVersionNumber: currentVersion,
+          publishedAt: new Date(),
+          publishedBy: req.user?.id
+        }
+      },
+      { new: true }
+    );
 
-      if (review.status !== "approved") {
-        throw new Error("REVIEW_NOT_APPROVED");
-      }
-
-      if (review.publishedAt) {
-        throw new Error("REVIEW_ALREADY_PUBLISHED");
-      }
-
-      const versionToPublish = review.versionNumber;
-
-      const snapshot = await PageVersion.findOne({
-        _id: review.pageVersionId
-      }).session(session);
-
-      if (!snapshot || snapshot.pageId.toString() !== page._id.toString() || snapshot.versionNumber !== versionToPublish) {
-        throw new Error("VERSION_MISMATCH");
-      }
-
-      const now = new Date();
-      const adminId = req.user?.id as any;
-
-      review.publishedBy = adminId;
-      review.publishedAt = now;
-      await review.save({ session });
-
-      page.publishedVersionNumber = versionToPublish;
-      page.publishedBy = adminId;
-      page.publishedAt = now;
-      page.activeReviewId = undefined;
-      page.status = (typeof page.version === 'number' && page.version > versionToPublish) ? "draft" : "published";
-
-      updatedPage = await page.save({ session });
-    });
+    if (!updatedPage) {
+      res.status(409).json({ error: "Conflict: page status changed before publishing. Please reload." });
+      return;
+    }
 
     res.json(updatedPage);
   } catch (error: any) {
-    if (error.message === "PAGE_NOT_FOUND") res.status(404).json({ error: "Page not found" });
-    else if (error.message === "INVALID_STATUS") res.status(409).json({ error: "Only approved pages can be published" });
-    else if (error.message === "MISSING_REVIEW") res.status(409).json({ error: "Cannot publish: missing active review" });
-    else if (error.message === "REVIEW_MISMATCH") res.status(409).json({ error: "Cannot publish: review mismatch" });
-    else if (error.message === "REVIEW_NOT_APPROVED") res.status(409).json({ error: "Cannot publish: active review is not approved" });
-    else if (error.message === "REVIEW_ALREADY_PUBLISHED") res.status(409).json({ code: "REVIEW_ALREADY_PUBLISHED", error: "This approved review has already been published." });
-    else if (error.message === "VERSION_MISMATCH") res.status(409).json({ error: "Cannot publish: version consistency mismatch." });
-    else res.status(500).json({ error: error.message || "Internal server error" });
-  } finally {
-    session.endSession();
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
 
@@ -611,32 +589,19 @@ export const listPageVersions = async (req: Request, res: Response): Promise<voi
     const limitQuery = parsePositiveIntegerQuery(req.query.limit, 20, 100);
     const skip = (pageQuery - 1) * limitQuery;
 
-    let query: any = { pageId: page._id };
-    
-    if (req.user?.role === "admin") {
-      const reviews = await PageReview.find({ pageId: page._id }).select("versionNumber").lean();
-      const submittedVersions = reviews.map(r => r.versionNumber);
-      
-      if (page.publishedVersionNumber !== undefined && !submittedVersions.includes(page.publishedVersionNumber)) {
-         submittedVersions.push(page.publishedVersionNumber);
-      }
-      
-      query.versionNumber = { $in: submittedVersions };
-    }
-
     const [versions, totalItems] = await Promise.all([
-      PageVersion.find(query)
+      PageVersion.find({ pageId: page._id })
         .select("versionNumber createdAt createdBy reason")
         .populate("createdBy", "fullName")
         .sort({ versionNumber: -1 })
         .skip(skip)
         .limit(limitQuery)
         .lean(),
-      PageVersion.countDocuments(query)
+      PageVersion.countDocuments({ pageId: page._id })
     ]);
 
     const totalPages = Math.ceil(totalItems / limitQuery);
-    
+
     // If page is out of bounds (but greater than 1), it will just return empty items array which is fine.
 
     const items = versions.map((v: any) => ({
@@ -685,9 +650,6 @@ export const listPageReviews = async (req: Request, res: Response): Promise<void
 
     const reviews = await PageReview.find({ pageId: page._id })
       .sort({ roundNumber: -1 })
-      .populate('publishedBy', 'fullName')
-      .populate('submittedBy', 'fullName')
-      .populate('reviewedBy', 'fullName')
       .lean();
 
     res.json(reviews);
