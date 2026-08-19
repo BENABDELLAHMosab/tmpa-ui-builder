@@ -8,6 +8,7 @@ type HistoryPanelProps = {
   refreshToken: number;
   pageStatus: PageStatus;
   currentVersion: number;
+  publishedVersionNumber?: number;
   onRestore: (versionNumber: number) => Promise<void>;
   onClose: () => void;
 };
@@ -22,6 +23,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
   refreshToken,
   pageStatus,
   currentVersion,
+  publishedVersionNumber,
   onRestore,
   onClose
 }) => {
@@ -33,6 +35,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
   const [totalPages, setTotalPages] = useState(0);
 
   const [restoringVersionNumber, setRestoringVersionNumber] = useState<number | null>(null);
+  const [deletingVersionNumber, setDeletingVersionNumber] = useState<number | null>(null);
 
   const canRestore = RESTORABLE_STATUSES.includes(pageStatus);
 
@@ -77,6 +80,23 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
       await onRestore(versionNumber);
     } finally {
       setRestoringVersionNumber(null);
+    }
+  };
+
+  const handleDeleteClick = async (versionNumber: number) => {
+    if (deletingVersionNumber !== null) return;
+    const confirmed = window.confirm(
+      `Delete Version ${versionNumber}?\n\nThis version will be permanently removed from the page history.\nThis action cannot be undone.`
+    );
+    if (!confirmed) return;
+    setDeletingVersionNumber(versionNumber);
+    try {
+      await pageService.deletePageVersion(pageId, versionNumber);
+      await fetchVersions(currentPage);
+    } catch (err: any) {
+      alert(err.message || "Failed to delete page version");
+    } finally {
+      setDeletingVersionNumber(null);
     }
   };
 
@@ -142,14 +162,20 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
           <div className="history-list">
             {items.map(item => {
               const isCurrentVersion = item.versionNumber === currentVersion;
+              const isPublishedVersion = item.versionNumber === publishedVersionNumber;
               const isRestoring = restoringVersionNumber === item.versionNumber;
+              const isDeleting = deletingVersionNumber === item.versionNumber;
               const showRestore = canRestore && !isCurrentVersion;
+              const canDelete = !isCurrentVersion && !isPublishedVersion;
 
               return (
                 <div key={item.id} className="history-item">
                   <div className="history-item-header">
                     <span className="history-item-version">Version {item.versionNumber}</span>
-                    {isCurrentVersion && <span className="history-item-current">Current</span>}
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {isCurrentVersion && <span className="history-item-current">Current</span>}
+                      {isPublishedVersion && !isCurrentVersion && <span className="history-item-current" style={{ backgroundColor: 'rgba(52, 211, 153, 0.2)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)' }}>Published</span>}
+                    </div>
                   </div>
                   <div className="history-item-reason">{getPageVersionReasonLabel(item.reason)}</div>
                   <div className="history-item-date">{formatDate(item.createdAt)}</div>
@@ -177,6 +203,24 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
                       >
                         View
                       </a>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          className="history-version-action"
+                          style={{
+                            color: '#ef4444',
+                            borderColor: 'rgba(239, 68, 68, 0.3)',
+                            backgroundColor: 'transparent',
+                            opacity: isDeleting || deletingVersionNumber !== null ? 0.5 : 1,
+                            cursor: isDeleting || deletingVersionNumber !== null ? 'not-allowed' : 'pointer'
+                          }}
+                          disabled={isDeleting || deletingVersionNumber !== null}
+                          onClick={() => handleDeleteClick(item.versionNumber)}
+                          aria-label={`Delete version ${item.versionNumber}`}
+                        >
+                          {isDeleting ? '...' : 'Delete'}
+                        </button>
+                      )}
                   </div>
                 </div>
               );

@@ -1168,6 +1168,7 @@ const BuilderPage = () => {
               refreshToken={historyRefreshToken}
               pageStatus={page?.status ?? 'draft'}
               currentVersion={page?.version ?? 1}
+              publishedVersionNumber={page?.publishedVersionNumber}
               onRestore={handleRestoreVersion}
               onClose={() => setRightPanelMode('properties')}
             />

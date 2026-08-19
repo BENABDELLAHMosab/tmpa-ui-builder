@@ -4,6 +4,7 @@ import type { UiPage } from '../types/page';
 import PortalLayout from '../components/layout/PortalLayout';
 import CreatePageForm from '../components/pages/CreatePageForm';
 import PageList from '../components/pages/PageList';
+import RejectionFeedback from '../components/ui/RejectionFeedback';
 import '../styles/dashboard.css';
 
 const DeveloperDashboardPage = () => {
@@ -38,6 +39,15 @@ const DeveloperDashboardPage = () => {
       setPages((prev) => prev.filter((p) => p._id !== pageId));
     } catch (err: any) {
       alert(err.message || "Failed to delete page");
+    }
+  };
+
+  const handleDismissRejection = async (pageId: string) => {
+    try {
+      const updatedPage = await pageService.dismissRejectionFeedback(pageId);
+      setPages((prev) => prev.map((p) => p._id === pageId ? updatedPage : p));
+    } catch (err: any) {
+      console.error(err.message || "Failed to dismiss feedback");
     }
   };
 
@@ -88,6 +98,18 @@ const DeveloperDashboardPage = () => {
             <strong className="stat-card__value">{stats.published}</strong>
           </article>
         </section>
+
+        {pages
+          .filter(p => p.status === 'rejected' && p.rejectionReason && !p.rejectionFeedbackDismissed)
+          .map(page => (
+            <RejectionFeedback 
+              key={`rejection-${page._id}`}
+              pageName={page.name}
+              reason={page.rejectionReason!}
+              onDismiss={() => handleDismissRejection(page._id)}
+            />
+          ))
+        }
 
         {/* Your Pages Section */}
         <div className="card" style={{ padding: '0' }}>

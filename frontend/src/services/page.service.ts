@@ -190,6 +190,32 @@ export const pageService = {
     }
 
     return response.json();
+  },
+
+  deletePageVersion: async (pageId: string, versionNumber: number): Promise<void> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/versions/${versionNumber}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to delete page version");
+    }
+  },
+
+  dismissRejectionFeedback: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/rejection-feedback/dismiss`, {
+      method: "PATCH",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to dismiss rejection feedback");
+    }
+
+    return response.json();
   }
 };
 

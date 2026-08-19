@@ -170,6 +170,7 @@ export interface UiPage {
   reviewedBy?: string;
   reviewedAt?: string;
   rejectionReason?: string;
+  rejectionFeedbackDismissed?: boolean;
   publishedBy?: string | { _id: string; fullName: string; email?: string };
   publishedAt?: string;
   publishedVersionNumber?: number;

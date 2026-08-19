@@ -7,6 +7,7 @@ import PreviewRenderer from '../components/preview/PreviewRenderer';
 import StatusBadge from '../components/ui/StatusBadge';
 import { normalizePageComponents } from '../utils/normalize';
 import { getPageVersionReasonLabel, formatDate } from '../utils/format';
+import type { PageVersionSummary } from '../types/page';
 import '../styles/preview.css';
 
 const PreviewPage = () => {
@@ -22,6 +23,18 @@ const PreviewPage = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [components, setComponents] = useState<BuilderComponent[]>([]);
+  const [versions, setVersions] = useState<PageVersionSummary[]>([]);
+  const [deletingVersionNumber, setDeletingVersionNumber] = useState<number | null>(null);
+
+  const fetchVersions = async (id: string) => {
+    try {
+      // Fetch 100 versions, sufficient for preview sidebar usually, or just page 1 with high limit
+      const data = await pageService.getPageVersions(id, 1, 100);
+      setVersions(data.items);
+    } catch (err) {
+      console.error("Failed to load versions sidebar", err);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +115,9 @@ const PreviewPage = () => {
     };
 
     fetchPage();
+    if (pageId) {
+      fetchVersions(pageId);
+    }
     return () => {
       cancelled = true;
     };
@@ -114,6 +130,32 @@ const PreviewPage = () => {
       navigate(`/builder/${pageId}`);
     } else {
       navigate('/developer/dashboard');
+    }
+  };
+
+  const handleDeleteVersion = async (e: React.MouseEvent, vNumber: number) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!window.confirm(`Delete Version ${vNumber}?\n\nThis version will be permanently removed from the page history.\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    if (!pageId) return;
+
+    try {
+      setDeletingVersionNumber(vNumber);
+      await pageService.deletePageVersion(pageId, vNumber);
+      await fetchVersions(pageId);
+      
+      // If we are currently viewing the deleted version, navigate away
+      if (isExplicitVersion && historicalVersion?.versionNumber === vNumber) {
+        navigate(`/preview/${pageId}`);
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to delete page version");
+    } finally {
+      setDeletingVersionNumber(null);
     }
   };
 
@@ -218,35 +260,65 @@ const PreviewPage = () => {
         <aside className="preview-sidebar sidebar-scrollbar">
           <h3>Versions</h3>
           <div className="preview-sidebar-list">
-            {page && Array.from({ length: page.version }, (_, i) => page.version - i).map((v) => {
+            {page && versions.map((version) => {
+              const v = version.versionNumber;
               const isSelected = isExplicitVersion
                 ? v === historicalVersion?.versionNumber
                 : isPublishedSnapshot
                   ? v === page.publishedVersionNumber
                   : v === page.version;
               const isCurrent = v === page.version;
+              const isPublished = v === page.publishedVersionNumber;
               const targetUrl = v === page.version && isExplicitVersion ? `/preview/${pageId}` : `/pages/${pageId}/versions/${v}/preview`;
 
+              const canDelete = !isCurrent && !isPublished && authUser?.role === 'user-developer';
+              const isDeleting = deletingVersionNumber === v;
+
               return (
-                <Link 
-                  key={v} 
-                  to={targetUrl}
-                  className="preview-sidebar-item" 
-                  style={{ 
-                    cursor: 'pointer', 
-                    opacity: isSelected ? 1 : 0.6,
-                    borderLeft: isSelected ? '3px solid var(--primary-500)' : '1px solid transparent',
-                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.02)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    textDecoration: 'none',
-                    color: 'white'
-                  }}
-                >
-                  <span>Version {v}</span>
-                  {isCurrent && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 600 }}>CURRENT</span>}
-                </Link>
+                <div key={v} style={{ position: 'relative' }}>
+                  <Link 
+                    to={targetUrl}
+                    className="preview-sidebar-item" 
+                    style={{ 
+                      cursor: 'pointer', 
+                      opacity: isSelected ? 1 : 0.6,
+                      borderLeft: isSelected ? '3px solid var(--primary-500)' : '1px solid transparent',
+                      backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.02)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      textDecoration: 'none',
+                      color: 'white',
+                      paddingRight: canDelete ? '60px' : '15px'
+                    }}
+                  >
+                    <span>Version {v}</span>
+                    {isCurrent && <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: 600 }}>CURRENT</span>}
+                    {isPublished && !isCurrent && <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: 600 }}>PUBLISHED</span>}
+                  </Link>
+                  {canDelete && (
+                    <button
+                      onClick={(e) => handleDeleteVersion(e, v)}
+                      disabled={isDeleting || deletingVersionNumber !== null}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: '1px solid rgba(239, 68, 68, 0.5)',
+                        color: '#ef4444',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.7rem',
+                        cursor: isDeleting || deletingVersionNumber !== null ? 'not-allowed' : 'pointer',
+                        opacity: isDeleting || deletingVersionNumber !== null ? 0.5 : 1
+                      }}
+                    >
+                      {isDeleting ? '...' : 'Delete'}
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>

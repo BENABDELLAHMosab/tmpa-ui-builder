@@ -261,6 +261,11 @@ export const submitPage = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    if ('rejectionReason' in page) {
+      page.rejectionReason = "";
+    }
+    
+    page.rejectionFeedbackDismissed = false;
     page.status = "submitted";
     const updatedPage = await page.save();
     res.json(updatedPage);
@@ -286,6 +291,7 @@ export const approvePage = async (req: Request, res: Response): Promise<void> =>
     page.reviewedBy = req.user?.id as any;
     page.reviewedAt = new Date();
     page.rejectionReason = "";
+    page.rejectionFeedbackDismissed = false;
 
     const updatedPage = await page.save();
     res.json(updatedPage);
@@ -317,6 +323,7 @@ export const rejectPage = async (req: Request, res: Response): Promise<void> => 
     page.reviewedBy = req.user?.id as any;
     page.reviewedAt = new Date();
     page.rejectionReason = rejectionReason;
+    page.rejectionFeedbackDismissed = false;
 
     const updatedPage = await page.save();
     res.json(updatedPage);
@@ -609,7 +616,8 @@ export const restorePageVersion = async (req: Request, res: Response): Promise<v
     const updateFields: Record<string, unknown> = {
       schema: restoredSnapshot,
       contentHash: restoredHash,
-      status: 'draft'
+      status: 'draft',
+      rejectionFeedbackDismissed: false
     };
     if ('rejectionReason' in page) {
       updateFields.rejectionReason = "";
@@ -629,6 +637,94 @@ export const restorePageVersion = async (req: Request, res: Response): Promise<v
       res.status(409).json({ error: "Conflict: The page was modified by another request. Please reload." });
       return;
     }
+
+    res.json(updatedPage);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
+
+export const deletePageVersion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id, versionNumber } = req.params;
+
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json({ error: "Invalid page ID format" });
+      return;
+    }
+
+    const parsedVersion = parseStrictVersionNumber(versionNumber);
+    if (parsedVersion === null) {
+      res.status(400).json({ error: "Invalid version number" });
+      return;
+    }
+
+    const page = await Page.findById(id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    const user = req.user as any;
+    if (user.role === 'user-developer' && page.ownerId.toString() !== user.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    const currentVersionNumber = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
+    if (parsedVersion === currentVersionNumber) {
+      res.status(409).json({
+        code: "CURRENT_VERSION_DELETE_FORBIDDEN",
+        error: "The current page version cannot be deleted."
+      });
+      return;
+    }
+
+    if (page.publishedVersionNumber === parsedVersion) {
+      res.status(409).json({
+        code: "PUBLISHED_VERSION_DELETE_FORBIDDEN",
+        error: "The published page version cannot be deleted."
+      });
+      return;
+    }
+
+    const deleteResult = await PageVersion.deleteOne({
+      pageId: page._id,
+      versionNumber: parsedVersion
+    });
+
+    if (deleteResult.deletedCount === 0) {
+      res.status(404).json({ error: "Page version not found" });
+      return;
+    }
+
+    res.json({ message: "Page version deleted successfully" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
+
+export const dismissRejectionFeedback = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const page = await Page.findById(req.params.id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    const user = req.user as any;
+    if (user.role === 'user-developer' && page.ownerId.toString() !== user.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    if (page.status !== 'rejected') {
+      res.status(400).json({ error: "Page is not rejected" });
+      return;
+    }
+
+    page.rejectionFeedbackDismissed = true;
+    const updatedPage = await page.save();
 
     res.json(updatedPage);
   } catch (error: any) {

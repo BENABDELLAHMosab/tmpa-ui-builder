@@ -25,6 +25,24 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
         <h2 style={{ marginLeft: '0.5rem' }}>{page.name}</h2>
         <span className="builder-header-version">v{page.version}</span>
         <StatusBadge status={page.status} />
+        {page.status === 'rejected' && page.rejectionReason && (
+          <>
+            <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-primary)', margin: '0 0.5rem' }} />
+            <div 
+              title={page.rejectionReason}
+              style={{ 
+                maxWidth: '250px', 
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis',
+                fontSize: '0.85rem',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              <span style={{ fontWeight: 600 }}>Motif :</span> {page.rejectionReason}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="builder-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
