@@ -211,3 +211,29 @@ label {
   font-weight: 600;
   color: var(--color-text);
 }
+
+/* Reusable Sidebar Scrollbar (Dark theme) */
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 201, 225, 0.45) transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(180, 201, 225, 0.45);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(205, 220, 238, 0.7);
+  background-clip: padding-box;
+}

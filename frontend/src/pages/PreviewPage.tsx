@@ -215,7 +215,7 @@ const PreviewPage = () => {
       </header>
 
       <div className="preview-main-wrapper">
-        <aside className="preview-sidebar">
+        <aside className="preview-sidebar sidebar-scrollbar">
           <h3>Versions</h3>
           <div className="preview-sidebar-list">
             {page && Array.from({ length: page.version }, (_, i) => page.version - i).map((v) => {

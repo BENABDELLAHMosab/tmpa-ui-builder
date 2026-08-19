@@ -192,7 +192,7 @@ const ComponentSidebar = ({
   );
 
   return (
-    <div className="builder-sidebar">
+    <div className="builder-sidebar sidebar-scrollbar">
       <div className="component-sidebar__palette">
         <div className="component-sidebar__search">
           <SearchIcon className="component-sidebar__search-icon" aria-hidden="true" focusable="false" />
