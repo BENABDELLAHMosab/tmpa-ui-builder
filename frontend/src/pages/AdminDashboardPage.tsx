@@ -11,6 +11,21 @@ interface AdminDashboardPageProps {
   view?: 'pending' | 'publication';
 }
 
+const getAdminDisplayVersion = (page: UiPage, currentTab?: string): number => {
+  if (currentTab === 'published' && page.publishedVersionNumber != null) {
+    return page.publishedVersionNumber;
+  }
+  if (page.status === 'published' && page.publishedVersionNumber != null) {
+    return page.publishedVersionNumber;
+  }
+  if (page.activeReviewId && 
+      typeof page.activeReviewId === 'object' && 
+      'versionNumber' in page.activeReviewId) {
+    return page.activeReviewId.versionNumber;
+  }
+  return page.version;
+};
+
 const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
   const navigate = useNavigate();
   const [pages, setPages] = useState<UiPage[]>([]);
@@ -36,7 +51,10 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
       const data = await pageService.getPages();
       const visiblePages = data.filter(p => {
         if (view === 'pending') return p.status === 'submitted';
-        if (view === 'publication') return p.status === 'approved' || p.status === 'published';
+        if (view === 'publication') {
+          return p.publishedVersionNumber != null || 
+                 (p.activeReviewId && typeof p.activeReviewId === 'object' && p.activeReviewId.status === 'approved');
+        }
         return false;
       });
       setPages(visiblePages);
@@ -48,12 +66,12 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
     }
   };
 
-  const handleApprove = async (pageId: string) => {
+  const handleApprove = async (pageId: string, reviewId: string) => {
     if (!window.confirm("Are you sure you want to approve this page?")) return;
 
     try {
       setActionLoadingId(pageId);
-      const updatedPage = await pageService.approvePage(pageId);
+      const updatedPage = await pageService.approvePage(pageId, reviewId);
       setPages(previousPages => previousPages.filter(p => p._id !== updatedPage._id));
       setSuccessMessage("Page approved successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -65,13 +83,13 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
     }
   };
 
-  const handleReject = async (pageId: string) => {
+  const handleReject = async (pageId: string, reviewId: string) => {
     const reason = window.prompt("Please provide a reason for rejection:");
     if (!reason || reason.trim() === '') return;
 
     try {
       setActionLoadingId(pageId);
-      await pageService.rejectPage(pageId, reason.trim());
+      await pageService.rejectPage(pageId, reviewId, reason.trim());
       setPages(pages.filter(p => p._id !== pageId));
       setSuccessMessage("Page rejected successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -101,7 +119,18 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
   };
 
   const displayedPages = view === 'publication' 
-    ? pages.filter(p => p.status === pubTab) 
+    ? pages.filter(p => {
+        if (pubTab === 'published') {
+          return p.publishedVersionNumber != null;
+        } else if (pubTab === 'approved') {
+          return p.activeReviewId && 
+                 typeof p.activeReviewId === 'object' && 
+                 'status' in p.activeReviewId &&
+                 p.activeReviewId.status === 'approved' && 
+                 !('publishedAt' in p.activeReviewId && p.activeReviewId.publishedAt);
+        }
+        return false;
+      })
     : pages;
 
   if (loading) {
@@ -152,7 +181,7 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
                 marginBottom: '-1px'
               }}
             >
-              Approved ({pages.filter(p => p.status === 'approved').length})
+              Approved ({pages.filter(p => p.activeReviewId && typeof p.activeReviewId === 'object' && 'status' in p.activeReviewId && p.activeReviewId.status === 'approved' && !('publishedAt' in p.activeReviewId && p.activeReviewId.publishedAt)).length})
             </button>
             <button 
               onClick={() => setPubTab('published')}
@@ -164,7 +193,7 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
                 marginBottom: '-1px'
               }}
             >
-              Published ({pages.filter(p => p.status === 'published').length})
+              Published ({pages.filter(p => p.publishedVersionNumber != null).length})
             </button>
           </div>
         )}
@@ -200,28 +229,42 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
                           : (page.ownerId || 'Unknown')}
                       </td>
                       <td>{new Date(page.updatedAt).toLocaleDateString()}</td>
-                      <td>v{page.version}</td>
-                      <td><StatusBadge status={page.status} /></td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontSize: '0.85rem' }}>
+                            {page.status === 'submitted' || page.status === 'approved' ? `Review v${getAdminDisplayVersion(page, pubTab)}` : `Current v${page.version}`}
+                          </span>
+                          {page.publishedVersionNumber != null && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-published)', fontWeight: 600 }}>
+                              LIVE v{page.publishedVersionNumber}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td><StatusBadge status={view === 'publication' && pubTab === 'published' && page.publishedVersionNumber != null ? 'published' : page.status} /></td>
                       <td>
                         <div className="table-actions">
                           <button
-                            onClick={() => navigate(`/preview/${page._id}`)}
+                            onClick={() => {
+                              const v = getAdminDisplayVersion(page, pubTab);
+                              navigate(`/pages/${page._id}/versions/${v}/preview`);
+                            }}
                             className="btn btn-secondary"
                             disabled={actionLoadingId === page._id}
                           >
                             Preview
                           </button>
-                          {page.status === 'submitted' && (
+                          {page.status === 'submitted' && page.activeReviewId && typeof page.activeReviewId === 'object' && (
                             <>
                               <button
-                                onClick={() => handleApprove(page._id)}
+                                onClick={() => handleApprove(page._id, (page.activeReviewId as any)._id)}
                                 className="btn btn-success"
                                 disabled={actionLoadingId === page._id}
                               >
                                 Approve
                               </button>
                               <button
-                                onClick={() => handleReject(page._id)}
+                                onClick={() => handleReject(page._id, (page.activeReviewId as any)._id)}
                                 className="btn btn-danger"
                                 disabled={actionLoadingId === page._id}
                               >

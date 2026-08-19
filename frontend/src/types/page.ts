@@ -165,6 +165,7 @@ export interface UiPage {
   status: PageStatus;
   schema: PageSchema;
   version: number;
+  activeReviewId?: string | { _id: string; versionNumber: number; status: string; roundNumber: number };
   createdAt: string;
   updatedAt: string;
   reviewedBy?: string;

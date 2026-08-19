@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import mongoose, { Types } from 'mongoose';
 import Page from '../models/page.model';
 import PageVersion from '../models/pageVersion.model';
+import PageReview from '../models/pageReview.model';
 import { generateContentHash, cloneJsonValue } from '../utils/contentHash';
 
 export const createPage = async (req: Request, res: Response): Promise<void> => {
@@ -38,7 +39,8 @@ export const getPages = async (req: Request, res: Response): Promise<void> => {
     const query = req.user?.role === "admin" ? {} : { ownerId: req.user?.id };
     const pages = await Page.find(query)
       .sort({ updatedAt: -1 })
-      .populate('ownerId', 'fullName email');
+      .populate('ownerId', 'fullName email')
+      .populate('activeReviewId', 'roundNumber versionNumber status publishedAt');
     res.json(pages);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
@@ -47,7 +49,8 @@ export const getPages = async (req: Request, res: Response): Promise<void> => {
 
 export const getPageById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const page = await Page.findById(req.params.id);
+    const page = await Page.findById(req.params.id)
+      .populate('activeReviewId', 'roundNumber versionNumber status publishedAt');
     if (!page) {
       res.status(404).json({ error: "Page not found" });
       return;
@@ -77,9 +80,20 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    if (page.status === "approved") {
+      res.status(403).json({ error: "Cannot edit an approved page before publication." });
+      return;
+    }
+
     const { name, description, schema: incomingSchema } = req.body;
     let schemaChanged = false;
     let incomingHash = "";
+
+    // If published, switch back to draft
+    let statusUpdate = {};
+    if (page.status === "published") {
+      statusUpdate = { status: "draft" };
+    }
 
     if (incomingSchema !== undefined) {
       incomingHash = generateContentHash(incomingSchema);
@@ -112,6 +126,7 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
               schema: incomingSchema,
               contentHash: incomingHash,
               version: 1,
+              ...statusUpdate,
               ...(name !== undefined ? { name } : {}),
               ...(description !== undefined ? { description } : {})
             }
@@ -143,70 +158,81 @@ export const updatePage = async (req: Request, res: Response): Promise<void> => 
       }
       
       await page.save();
-      res.json(page);
+      const populatedPage = await Page.findById(page._id).populate('activeReviewId');
+      res.json(populatedPage);
       return;
     }
 
-    const versionCount = await PageVersion.countDocuments({ pageId: page._id });
-    if (versionCount === 0 && page.version > 0) {
-      const currentHash = page.contentHash || generateContentHash(page.schema);
-      const baselineVersionNumber = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
-      
-      try {
-        await PageVersion.create({
-          pageId: page._id,
-          versionNumber: baselineVersionNumber,
-          schemaSnapshot: cloneJsonValue(page.schema),
-          contentHash: currentHash,
-          createdBy: req.user?.id,
-          reason: "legacy-baseline"
-        });
-      } catch (err: any) {
-        if (err.code !== 11000) {
-          throw err;
-        }
-      }
-    }
-
-    const currentVersion = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
-    const nextVersion = currentVersion + 1;
-
-    let tempVersion;
+    // Use a transaction for saving new versions if it's submitted, or generally for safety
+    const session = await mongoose.startSession();
     try {
-      tempVersion = await PageVersion.create({
-        pageId: page._id,
-        versionNumber: nextVersion,
-        schemaSnapshot: cloneJsonValue(incomingSchema),
-        contentHash: incomingHash,
-        createdBy: req.user?.id,
-        reason: "manual-save"
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: "Failed to create provisional snapshot" });
-      return;
-    }
+      let updatedPage;
+      await session.withTransaction(async () => {
+        const versionCount = await PageVersion.countDocuments({ pageId: page._id }).session(session);
+        if (versionCount === 0 && page.version > 0) {
+          const currentHash = page.contentHash || generateContentHash(page.schema);
+          const baselineVersionNumber = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
+          
+          try {
+            await PageVersion.create([{
+              pageId: page._id,
+              versionNumber: baselineVersionNumber,
+              schemaSnapshot: cloneJsonValue(page.schema),
+              contentHash: currentHash,
+              createdBy: req.user?.id,
+              reason: "legacy-baseline"
+            }], { session });
+          } catch (err: any) {
+            if (err.code !== 11000) {
+              throw err;
+            }
+          }
+        }
 
-    const updatedPage = await Page.findOneAndUpdate(
-      { _id: page._id, version: currentVersion },
-      {
-        $set: {
-          schema: incomingSchema,
+        const currentVersion = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
+        const nextVersion = currentVersion + 1;
+
+        const tempVersionArr = await PageVersion.create([{
+          pageId: page._id,
+          versionNumber: nextVersion,
+          schemaSnapshot: cloneJsonValue(incomingSchema),
           contentHash: incomingHash,
-          ...(name !== undefined ? { name } : {}),
-          ...(description !== undefined ? { description } : {})
-        },
-        $inc: { version: 1 }
-      },
-      { new: true, runValidators: true }
-    );
+          createdBy: req.user?.id,
+          reason: "manual-save"
+        }], { session });
+        const tempVersion = tempVersionArr[0];
 
-    if (!updatedPage) {
-      await PageVersion.findByIdAndDelete(tempVersion._id);
-      res.status(409).json({ error: "Conflict: The page was modified by another request. Please reload." });
-      return;
+        updatedPage = await Page.findOneAndUpdate(
+          { _id: page._id, version: currentVersion },
+          {
+            $set: {
+              schema: incomingSchema,
+              contentHash: incomingHash,
+              ...statusUpdate,
+              ...(name !== undefined ? { name } : {}),
+              ...(description !== undefined ? { description } : {})
+            },
+            $inc: { version: 1 }
+          },
+          { new: true, runValidators: true, session }
+        );
+
+        if (!updatedPage) {
+          throw new Error("CONFLICT");
+        }
+
+      });
+      const populatedPage = await Page.findById(updatedPage!._id).populate('activeReviewId');
+      res.json(populatedPage);
+    } catch (err: any) {
+      if (err.message === "CONFLICT") {
+        res.status(409).json({ error: "Conflict: The page was modified by another request. Please reload." });
+      } else {
+        throw err;
+      }
+    } finally {
+      session.endSession();
     }
-
-    res.json(updatedPage);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
   }
@@ -234,73 +260,201 @@ export const deletePage = async (req: Request, res: Response): Promise<void> => 
 };
 
 export const submitPage = async (req: Request, res: Response): Promise<void> => {
+  const session = await mongoose.startSession();
   try {
-    const page = await Page.findById(req.params.id);
-    if (!page) {
-      res.status(404).json({ error: "Page not found" });
-      return;
-    }
+    let updatedPage;
+    await session.withTransaction(async () => {
+      const page = await Page.findById(req.params.id).session(session);
+      if (!page) {
+        throw new Error("PAGE_NOT_FOUND");
+      }
 
-    if (req.user?.role === "user-developer" && page.ownerId.toString() !== req.user.id) {
-      res.status(403).json({ error: "Access denied" });
-      return;
-    }
+      if (req.user?.role === "user-developer" && page.ownerId.toString() !== req.user.id) {
+        throw new Error("ACCESS_DENIED");
+      }
 
-    if (page.status !== "draft") {
-      res.status(400).json({ error: "Only draft pages can be submitted" });
-      return;
-    }
+      if (page.status !== "draft" && page.status !== "rejected") {
+        throw new Error("INVALID_STATUS");
+      }
 
-    if (page.version === 0) {
-      res.status(400).json({ error: "Save the page before submitting it." });
-      return;
-    }
+      if (page.version === 0) {
+        throw new Error("VERSION_ZERO");
+      }
 
-    if (!page.schema || !page.schema.components || !Array.isArray(page.schema.components) || page.schema.components.length === 0) {
-      res.status(400).json({ error: "Cannot submit an empty page" });
-      return;
-    }
+      if (!page.schema || !page.schema.components || !Array.isArray(page.schema.components) || page.schema.components.length === 0) {
+        throw new Error("EMPTY_PAGE");
+      }
 
-    if ('rejectionReason' in page) {
-      page.rejectionReason = "";
-    }
-    
-    page.rejectionFeedbackDismissed = false;
-    page.status = "submitted";
-    const updatedPage = await page.save();
+      const versionSnapshot = await PageVersion.findOne({ pageId: page._id, versionNumber: page.version }).session(session);
+      if (!versionSnapshot) {
+        throw new Error("VERSION_NOT_FOUND");
+      }
+
+      if (page.status === "rejected" && page.activeReviewId) {
+        const prevReview = await PageReview.findById(page.activeReviewId).session(session);
+        if (prevReview && page.version <= prevReview.versionNumber) {
+          throw new Error("RESUBMIT_NO_CHANGES");
+        }
+      }
+
+      const updatedPageDoc = await Page.findOneAndUpdate(
+        { _id: page._id },
+        { $inc: { reviewRoundCounter: 1 } },
+        { new: true, session }
+      );
+      
+      if (!updatedPageDoc) throw new Error("PAGE_NOT_FOUND");
+
+      const review = new PageReview({
+        pageId: page._id,
+        pageVersionId: versionSnapshot._id,
+        versionNumber: page.version,
+        roundNumber: updatedPageDoc.reviewRoundCounter,
+        status: 'submitted',
+        submittedBy: req.user?.id,
+        submittedAt: new Date()
+      });
+      await review.save({ session });
+
+      updatedPageDoc.activeReviewId = review._id as any;
+      updatedPageDoc.status = "submitted";
+      updatedPageDoc.rejectionReason = "";
+      updatedPageDoc.rejectionFeedbackDismissed = false;
+
+      updatedPage = await updatedPageDoc.save({ session });
+    });
+
     res.json(updatedPage);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal server error" });
+    if (error.message === "PAGE_NOT_FOUND") res.status(404).json({ error: "Page not found" });
+    else if (error.message === "ACCESS_DENIED") res.status(403).json({ error: "Access denied" });
+    else if (error.message === "INVALID_STATUS") res.status(400).json({ error: "Only draft or rejected pages can be submitted" });
+    else if (error.message === "VERSION_ZERO") res.status(400).json({ error: "Save the page before submitting it." });
+    else if (error.message === "EMPTY_PAGE") res.status(400).json({ error: "Cannot submit an empty page" });
+    else if (error.message === "VERSION_NOT_FOUND") res.status(404).json({ error: "Page version snapshot not found" });
+    else if (error.message === "RESUBMIT_NO_CHANGES") res.status(409).json({ error: "Save your corrections before resubmitting." });
+    else res.status(500).json({ error: error.message || "Internal server error" });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const updateReviewToLatest = async (req: Request, res: Response): Promise<void> => {
+  const session = await mongoose.startSession();
+  try {
+    let updatedPage;
+    await session.withTransaction(async () => {
+      const page = await Page.findById(req.params.id).session(session);
+      if (!page) throw new Error("PAGE_NOT_FOUND");
+      
+      if (req.user?.role === "user-developer" && page.ownerId.toString() !== req.user.id) {
+        throw new Error("ACCESS_DENIED");
+      }
+      
+      if (!page.activeReviewId) throw new Error("MISSING_REVIEW");
+
+      const review = await PageReview.findById(page.activeReviewId).session(session);
+      if (!review) throw new Error("MISSING_REVIEW");
+
+      if (review.status !== "submitted") {
+        throw new Error("INVALID_REVIEW_STATUS");
+      }
+
+      if (page.version <= review.versionNumber) {
+        throw new Error("NO_NEWER_VERSION");
+      }
+
+      const versionSnapshot = await PageVersion.findOne({ pageId: page._id, versionNumber: page.version }).session(session);
+      if (!versionSnapshot) {
+        throw new Error("VERSION_NOT_FOUND");
+      }
+
+      const updatedPageDoc = await Page.findOneAndUpdate(
+        { _id: page._id },
+        { $inc: { reviewRoundCounter: 1 } },
+        { new: true, session }
+      );
+      if (!updatedPageDoc) throw new Error("PAGE_NOT_FOUND");
+
+      const newReview = new PageReview({
+        pageId: page._id,
+        pageVersionId: versionSnapshot._id,
+        versionNumber: page.version,
+        roundNumber: updatedPageDoc.reviewRoundCounter,
+        status: 'submitted',
+        submittedBy: req.user?.id,
+        submittedAt: new Date()
+      });
+
+      review.status = 'superseded';
+      review.supersededAt = new Date();
+      review.supersededByReviewId = newReview._id as any;
+      await review.save({ session }); // Save old review first to free the unique index
+
+      await newReview.save({ session });
+
+      updatedPageDoc.activeReviewId = newReview._id as any;
+      updatedPage = await updatedPageDoc.save({ session });
+    });
+    res.json(updatedPage);
+  } catch (error: any) {
+    if (error.message === "PAGE_NOT_FOUND") res.status(404).json({ error: "Page not found" });
+    else if (error.message === "ACCESS_DENIED") res.status(403).json({ error: "Access denied" });
+    else if (error.message === "MISSING_REVIEW") res.status(404).json({ error: "No active review found" });
+    else if (error.message === "INVALID_REVIEW_STATUS") res.status(400).json({ error: "Active review is not submitted" });
+    else if (error.message === "NO_NEWER_VERSION") res.status(409).json({ error: "NO_NEWER_VERSION_TO_SUBMIT", message: "No newer version to submit" });
+    else if (error.message === "VERSION_NOT_FOUND") res.status(404).json({ error: "Page version snapshot not found" });
+    else res.status(500).json({ error: error.message || "Internal server error" });
+  } finally {
+    session.endSession();
   }
 };
 
 export const approvePage = async (req: Request, res: Response): Promise<void> => {
+  const session = await mongoose.startSession();
   try {
-    const page = await Page.findById(req.params.id);
-    if (!page) {
-      res.status(404).json({ error: "Page not found" });
-      return;
-    }
+    let updatedPage;
+    await session.withTransaction(async () => {
+      const page = await Page.findById(req.params.pageId).session(session);
+      if (!page) throw new Error("PAGE_NOT_FOUND");
+      
+      const reviewId = req.params.reviewId;
+      if (!page.activeReviewId || page.activeReviewId.toString() !== reviewId) {
+        throw new Error("REVIEW_NO_LONGER_ACTIVE");
+      }
 
-    if (page.status !== "submitted") {
-      res.status(400).json({ error: "Only submitted pages can be approved" });
-      return;
-    }
+      const review = await PageReview.findById(reviewId).session(session);
+      if (!review) throw new Error("MISSING_REVIEW");
 
-    page.status = "approved";
-    page.reviewedBy = req.user?.id as any;
-    page.reviewedAt = new Date();
-    page.rejectionReason = "";
-    page.rejectionFeedbackDismissed = false;
+      if (review.status !== "submitted") throw new Error("INVALID_STATUS");
 
-    const updatedPage = await page.save();
+      review.status = 'approved';
+      review.reviewedBy = req.user?.id as any;
+      review.reviewedAt = new Date();
+      await review.save({ session });
+
+      page.status = "approved";
+      page.reviewedBy = req.user?.id as any;
+      page.reviewedAt = new Date();
+      page.rejectionReason = "";
+      page.rejectionFeedbackDismissed = false;
+
+      updatedPage = await page.save({ session });
+    });
     res.json(updatedPage);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal server error" });
+    if (error.message === "PAGE_NOT_FOUND") res.status(404).json({ error: "Page not found" });
+    else if (error.message === "INVALID_STATUS") res.status(400).json({ error: "Only submitted pages can be approved" });
+    else if (error.message === "REVIEW_NO_LONGER_ACTIVE") res.status(409).json({ code: "REVIEW_NO_LONGER_ACTIVE", error: "A newer version has been submitted for review." });
+    else if (error.message === "MISSING_REVIEW") res.status(409).json({ error: "Cannot approve a legacy page missing an active review." });
+    else res.status(500).json({ error: error.message || "Internal server error" });
+  } finally {
+    session.endSession();
   }
 };
 
 export const rejectPage = async (req: Request, res: Response): Promise<void> => {
+  const session = await mongoose.startSession();
   try {
     const { rejectionReason } = req.body;
     if (!rejectionReason || typeof rejectionReason !== 'string' || rejectionReason.trim() === '') {
@@ -308,83 +462,122 @@ export const rejectPage = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const page = await Page.findById(req.params.id);
-    if (!page) {
-      res.status(404).json({ error: "Page not found" });
-      return;
-    }
+    let updatedPage;
+    await session.withTransaction(async () => {
+      const page = await Page.findById(req.params.pageId).session(session);
+      if (!page) throw new Error("PAGE_NOT_FOUND");
+      
+      const reviewId = req.params.reviewId;
+      if (!page.activeReviewId || page.activeReviewId.toString() !== reviewId) {
+        throw new Error("REVIEW_NO_LONGER_ACTIVE");
+      }
 
-    if (page.status !== "submitted") {
-      res.status(400).json({ error: "Only submitted pages can be rejected" });
-      return;
-    }
+      const review = await PageReview.findById(reviewId).session(session);
+      if (!review) throw new Error("MISSING_REVIEW");
 
-    page.status = "rejected";
-    page.reviewedBy = req.user?.id as any;
-    page.reviewedAt = new Date();
-    page.rejectionReason = rejectionReason;
-    page.rejectionFeedbackDismissed = false;
+      if (review.status !== "submitted") throw new Error("INVALID_STATUS");
 
-    const updatedPage = await page.save();
+      review.status = 'changes_requested';
+      review.reviewedBy = req.user?.id as any;
+      review.reviewedAt = new Date();
+      review.feedback = rejectionReason;
+      await review.save({ session });
+
+      page.status = "rejected";
+      page.reviewedBy = req.user?.id as any;
+      page.reviewedAt = new Date();
+      page.rejectionReason = rejectionReason;
+      page.rejectionFeedbackDismissed = false;
+
+      updatedPage = await page.save({ session });
+    });
     res.json(updatedPage);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal server error" });
+    if (error.message === "PAGE_NOT_FOUND") res.status(404).json({ error: "Page not found" });
+    else if (error.message === "INVALID_STATUS") res.status(400).json({ error: "Only submitted pages can be rejected" });
+    else if (error.message === "REVIEW_NO_LONGER_ACTIVE") res.status(409).json({ code: "REVIEW_NO_LONGER_ACTIVE", error: "A newer version has been submitted for review." });
+    else if (error.message === "MISSING_REVIEW") res.status(409).json({ error: "Cannot reject a legacy page missing an active review." });
+    else res.status(500).json({ error: error.message || "Internal server error" });
+  } finally {
+    session.endSession();
   }
 };
 
 export const publishPage = async (req: Request, res: Response): Promise<void> => {
+  const session = await mongoose.startSession();
   try {
     if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ error: "Invalid page ID format" });
       return;
     }
 
-    const page = await Page.findById(req.params.id);
-    if (!page) {
-      res.status(404).json({ error: "Page not found" });
-      return;
-    }
+    let updatedPage;
 
-    if (page.status !== "approved") {
-      res.status(409).json({ error: "Only approved pages can be published" });
-      return;
-    }
+    await session.withTransaction(async () => {
+      const page = await Page.findById(req.params.id).session(session);
+      if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    const currentVersion = (typeof page.version === 'number' && page.version >= 1) ? page.version : 1;
+      if (page.status !== "approved") {
+        throw new Error("INVALID_STATUS");
+      }
 
-    const snapshot = await PageVersion.findOne({
-      pageId: page._id,
-      versionNumber: currentVersion
-    }).lean();
+      if (!page.activeReviewId) {
+        throw new Error("MISSING_REVIEW");
+      }
 
-    if (!snapshot) {
-      res.status(409).json({
-        error: `Cannot publish: no version snapshot found for version ${currentVersion}.`
-      });
-      return;
-    }
+      const review = await PageReview.findById(page.activeReviewId).session(session);
+      if (!review) throw new Error("MISSING_REVIEW");
 
-    const updatedPage = await Page.findOneAndUpdate(
-      { _id: page._id, status: "approved" },
-      {
-        $set: {
-          status: "published",
-          publishedVersionNumber: currentVersion,
-          publishedAt: new Date(),
-          publishedBy: req.user?.id
-        }
-      },
-      { new: true }
-    );
+      if (review.pageId.toString() !== page._id.toString()) {
+        throw new Error("REVIEW_MISMATCH");
+      }
 
-    if (!updatedPage) {
-      res.status(409).json({ error: "Conflict: page status changed before publishing. Please reload." });
-      return;
-    }
+      if (review.status !== "approved") {
+        throw new Error("REVIEW_NOT_APPROVED");
+      }
+
+      if (review.publishedAt) {
+        throw new Error("REVIEW_ALREADY_PUBLISHED");
+      }
+
+      const versionToPublish = review.versionNumber;
+
+      const snapshot = await PageVersion.findOne({
+        _id: review.pageVersionId
+      }).session(session);
+
+      if (!snapshot || snapshot.pageId.toString() !== page._id.toString() || snapshot.versionNumber !== versionToPublish) {
+        throw new Error("VERSION_MISMATCH");
+      }
+
+      const now = new Date();
+      const adminId = req.user?.id as any;
+
+      review.publishedBy = adminId;
+      review.publishedAt = now;
+      await review.save({ session });
+
+      page.publishedVersionNumber = versionToPublish;
+      page.publishedBy = adminId;
+      page.publishedAt = now;
+      page.activeReviewId = undefined;
+      page.status = (typeof page.version === 'number' && page.version > versionToPublish) ? "draft" : "published";
+
+      updatedPage = await page.save({ session });
+    });
 
     res.json(updatedPage);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal server error" });
+    if (error.message === "PAGE_NOT_FOUND") res.status(404).json({ error: "Page not found" });
+    else if (error.message === "INVALID_STATUS") res.status(409).json({ error: "Only approved pages can be published" });
+    else if (error.message === "MISSING_REVIEW") res.status(409).json({ error: "Cannot publish: missing active review" });
+    else if (error.message === "REVIEW_MISMATCH") res.status(409).json({ error: "Cannot publish: review mismatch" });
+    else if (error.message === "REVIEW_NOT_APPROVED") res.status(409).json({ error: "Cannot publish: active review is not approved" });
+    else if (error.message === "REVIEW_ALREADY_PUBLISHED") res.status(409).json({ code: "REVIEW_ALREADY_PUBLISHED", error: "This approved review has already been published." });
+    else if (error.message === "VERSION_MISMATCH") res.status(409).json({ error: "Cannot publish: version consistency mismatch." });
+    else res.status(500).json({ error: error.message || "Internal server error" });
+  } finally {
+    session.endSession();
   }
 };
 
@@ -418,15 +611,28 @@ export const listPageVersions = async (req: Request, res: Response): Promise<voi
     const limitQuery = parsePositiveIntegerQuery(req.query.limit, 20, 100);
     const skip = (pageQuery - 1) * limitQuery;
 
+    let query: any = { pageId: page._id };
+    
+    if (req.user?.role === "admin") {
+      const reviews = await PageReview.find({ pageId: page._id }).select("versionNumber").lean();
+      const submittedVersions = reviews.map(r => r.versionNumber);
+      
+      if (page.publishedVersionNumber !== undefined && !submittedVersions.includes(page.publishedVersionNumber)) {
+         submittedVersions.push(page.publishedVersionNumber);
+      }
+      
+      query.versionNumber = { $in: submittedVersions };
+    }
+
     const [versions, totalItems] = await Promise.all([
-      PageVersion.find({ pageId: page._id })
+      PageVersion.find(query)
         .select("versionNumber createdAt createdBy reason")
         .populate("createdBy", "fullName")
         .sort({ versionNumber: -1 })
         .skip(skip)
         .limit(limitQuery)
         .lean(),
-      PageVersion.countDocuments({ pageId: page._id })
+      PageVersion.countDocuments(query)
     ]);
 
     const totalPages = Math.ceil(totalItems / limitQuery);
@@ -454,6 +660,37 @@ export const listPageVersions = async (req: Request, res: Response): Promise<voi
         totalPages
       }
     });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
+
+export const listPageReviews = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!Types.ObjectId.isValid(req.params.id)) {
+      res.status(400).json({ error: "Invalid page ID" });
+      return;
+    }
+
+    const page = await Page.findById(req.params.id);
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+
+    if (req.user?.role === "user-developer" && page.ownerId.toString() !== req.user.id) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    const reviews = await PageReview.find({ pageId: page._id })
+      .sort({ roundNumber: -1 })
+      .populate('publishedBy', 'fullName')
+      .populate('submittedBy', 'fullName')
+      .populate('reviewedBy', 'fullName')
+      .lean();
+
+    res.json(reviews);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Internal server error" });
   }
@@ -492,6 +729,23 @@ export const getPageVersion = async (req: Request, res: Response): Promise<void>
     if (user.role === 'user-developer' && page.ownerId.toString() !== user.id) {
       res.status(403).json({ error: "Access denied" });
       return;
+    }
+
+    if (user.role === 'admin') {
+      const isPublished = page.publishedVersionNumber === parsedVersion;
+      if (!isPublished) {
+        const reviewExists = await PageReview.exists({
+          pageId: page._id,
+          versionNumber: parsedVersion
+        });
+        if (!reviewExists) {
+          res.status(403).json({
+            code: "VERSION_NOT_SUBMITTED_FOR_REVIEW",
+            error: "This page version has not been submitted for review."
+          });
+          return;
+        }
+      }
     }
 
     const version = await PageVersion.findOne({

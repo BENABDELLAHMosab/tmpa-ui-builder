@@ -15,6 +15,8 @@ export interface IPage extends Omit<Document, 'schema'> {
   publishedAt?: Date;
   publishedVersionNumber?: number;
   contentHash?: string;
+  activeReviewId?: mongoose.Types.ObjectId;
+  reviewRoundCounter: number;
 }
 
 const pageSchema: Schema = new Schema(
@@ -36,7 +38,9 @@ const pageSchema: Schema = new Schema(
     publishedVersionNumber: { type: Number },
     schema: { type: Schema.Types.Mixed, default: { components: [] } },
     version: { type: Number, default: 0 },
-    contentHash: { type: String }
+    contentHash: { type: String },
+    activeReviewId: { type: Schema.Types.ObjectId, ref: 'PageReview' },
+    reviewRoundCounter: { type: Number, default: 0 }
   },
   { timestamps: true }
 );

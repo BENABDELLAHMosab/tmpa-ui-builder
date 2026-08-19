@@ -8,12 +8,22 @@ interface BuilderHeaderProps {
   onPreview: () => void;
   onHistoryToggle: () => void;
   onSubmitForValidation: () => void;
+  onUpdateReview?: () => void;
+  activeReviewVersion?: number;
+  currentVersion?: number;
+  hasUnsavedChanges?: boolean;
   submitting: boolean;
   saving: boolean;
   historyActive: boolean;
 }
 
-const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSubmitForValidation, submitting, saving, historyActive }: BuilderHeaderProps) => {
+const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSubmitForValidation, onUpdateReview, activeReviewVersion, currentVersion, hasUnsavedChanges, submitting, saving, historyActive }: BuilderHeaderProps) => {
+  const isUnderReview = page.status === 'submitted';
+  const isChangesRequested = page.status === 'rejected';
+  
+  const hasNewerChanges = currentVersion && activeReviewVersion && currentVersion > activeReviewVersion;
+  const isPublished = page.publishedVersionNumber != null;
+
   return (
     <header className="builder-header">
       <div className="builder-header-info">
@@ -25,7 +35,27 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
         <h2 style={{ marginLeft: '0.5rem' }}>{page.name}</h2>
         <span className="builder-header-version">v{page.version}</span>
         <StatusBadge status={page.status} />
-        {page.status === 'rejected' && page.rejectionReason && (
+        {isUnderReview && (
+          <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+             IN REVIEW (v{activeReviewVersion})
+          </span>
+        )}
+        {isChangesRequested && (
+          <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold', color: 'var(--color-danger)' }}>
+             REVIEWED v{activeReviewVersion}
+          </span>
+        )}
+        {isUnderReview && hasNewerChanges && (
+          <span style={{ marginLeft: '8px', fontSize: '12px', color: 'orange' }}>
+            Newer changes are not submitted
+          </span>
+        )}
+        {isPublished && page.status !== 'published' && (
+          <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: 'bold', color: 'var(--color-success)', backgroundColor: 'rgba(52, 211, 153, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(52, 211, 153, 0.2)' }}>
+            LIVE (v{page.publishedVersionNumber})
+          </span>
+        )}
+        {isChangesRequested && page.rejectionReason && (
           <>
             <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-primary)', margin: '0 0.5rem' }} />
             <div 
@@ -41,11 +71,16 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
             >
               <span style={{ fontWeight: 600 }}>Motif :</span> {page.rejectionReason}
             </div>
+            {(!hasNewerChanges || hasUnsavedChanges) && (
+              <span style={{ marginLeft: '8px', fontSize: '12px', color: 'orange' }}>
+                Save your corrections before resubmitting.
+              </span>
+            )}
           </>
         )}
       </div>
 
-      <div className="builder-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+      <div className="builder-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         {page.status === 'draft' && (
           <button
             className="btn btn-warning"
@@ -53,7 +88,25 @@ const BuilderHeader = ({ page, onBack, onSave, onPreview, onHistoryToggle, onSub
             onClick={onSubmitForValidation}
             disabled={submitting || saving}
           >
-            {submitting ? 'Submitting...' : 'Submit'}
+            {submitting ? 'Submitting...' : 'Submit for Review'}
+          </button>
+        )}
+        {isUnderReview && hasNewerChanges && onUpdateReview && (
+          <button
+            className="btn btn-warning"
+            onClick={onUpdateReview}
+            disabled={submitting || saving}
+          >
+            {submitting ? 'Updating...' : `Update Review to v${currentVersion}`}
+          </button>
+        )}
+        {isChangesRequested && hasNewerChanges && !hasUnsavedChanges && (
+          <button
+            className="btn btn-warning"
+            onClick={onSubmitForValidation}
+            disabled={submitting || saving}
+          >
+            {submitting ? 'Resubmitting...' : `Resubmit v${currentVersion} for Review`}
           </button>
         )}
         <button

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pageService } from '../services/page.service';
 import { customComponentService } from '../services/customComponent.service';
@@ -401,6 +401,11 @@ const BuilderPage = () => {
     return [];
   }, [components]);
 
+  const hasUnsavedChanges = useMemo(() => {
+    if (!page || !page.schema) return false;
+    const cleanComponents = page.schema.components || [];
+    return JSON.stringify(components) !== JSON.stringify(cleanComponents);
+  }, [components, page]);
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -635,6 +640,17 @@ const BuilderPage = () => {
       });
       
       setPage(updatedPage);
+      if (updatedPage.schema && Array.isArray(updatedPage.schema.components)) {
+        setComponents(
+          normalizeComponentLayers(
+            normalizeContainerChildrenLayout(
+              normalizeComponentsLayout(
+                normalizeComponentParents(updatedPage.schema.components as import('../types/page').BuilderComponent[])
+              )
+            )
+          )
+        );
+      }
       setHistoryRefreshToken(prev => prev + 1);
       setSuccessMessage("Page saved successfully");
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -659,6 +675,25 @@ const BuilderPage = () => {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
       setError(err.message || "Failed to submit page");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateReview = async () => {
+    if (!pageId || !page) return;
+
+    try {
+      setSubmitting(true);
+      setError(null);
+      setSuccessMessage('');
+      
+      const updatedPage = await pageService.updateReviewToLatest(pageId);
+      setPage(updatedPage);
+      setSuccessMessage("Review updated successfully");
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to update review");
     } finally {
       setSubmitting(false);
     }
@@ -1113,11 +1148,15 @@ const BuilderPage = () => {
             onBack={() => navigate('/developer/dashboard')} 
             onSave={handleSave}
             onPreview={handlePreview}
+            onUpdateReview={handleUpdateReview}
             onHistoryToggle={() => setRightPanelMode(prev => prev === 'history' ? 'properties' : 'history')}
             onSubmitForValidation={handleSubmitForValidation}
             submitting={submitting}
             saving={saving}
             historyActive={rightPanelMode === 'history'}
+            activeReviewVersion={page.activeReviewId && typeof page.activeReviewId === 'object' && 'versionNumber' in page.activeReviewId ? page.activeReviewId.versionNumber : undefined}
+            currentVersion={page.version}
+            hasUnsavedChanges={hasUnsavedChanges}
           />
         )}
         

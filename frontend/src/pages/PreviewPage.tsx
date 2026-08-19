@@ -4,7 +4,7 @@ import { pageService } from '../services/page.service';
 import { getAuthUser, getDashboardPathByRole } from '../utils/authStorage';
 import type { UiPage, BuilderComponent, PageVersionDetail } from '../types/page';
 import PreviewRenderer from '../components/preview/PreviewRenderer';
-import StatusBadge from '../components/ui/StatusBadge';
+import StatusBadge, { ReviewStatusBadge } from '../components/ui/StatusBadge';
 import { normalizePageComponents } from '../utils/normalize';
 import { getPageVersionReasonLabel, formatDate } from '../utils/format';
 import type { PageVersionSummary } from '../types/page';
@@ -24,15 +24,20 @@ const PreviewPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [components, setComponents] = useState<BuilderComponent[]>([]);
   const [versions, setVersions] = useState<PageVersionSummary[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [deletingVersionNumber, setDeletingVersionNumber] = useState<number | null>(null);
 
-  const fetchVersions = async (id: string) => {
+  const fetchSidebarData = async (id: string) => {
     try {
-      // Fetch 100 versions, sufficient for preview sidebar usually, or just page 1 with high limit
-      const data = await pageService.getPageVersions(id, 1, 100);
-      setVersions(data.items);
+      if (authUser?.role === 'admin') {
+        const data = await pageService.getPageReviews(id);
+        setReviews(data);
+      } else {
+        const data = await pageService.getPageVersions(id, 1, 100);
+        setVersions(data.items);
+      }
     } catch (err) {
-      console.error("Failed to load versions sidebar", err);
+      console.error("Failed to load sidebar data", err);
     }
   };
 
@@ -116,7 +121,7 @@ const PreviewPage = () => {
 
     fetchPage();
     if (pageId) {
-      fetchVersions(pageId);
+      fetchSidebarData(pageId);
     }
     return () => {
       cancelled = true;
@@ -146,7 +151,7 @@ const PreviewPage = () => {
     try {
       setDeletingVersionNumber(vNumber);
       await pageService.deletePageVersion(pageId, vNumber);
-      await fetchVersions(pageId);
+      await fetchSidebarData(pageId);
       
       // If we are currently viewing the deleted version, navigate away
       if (isExplicitVersion && historicalVersion?.versionNumber === vNumber) {
@@ -258,9 +263,55 @@ const PreviewPage = () => {
 
       <div className="preview-main-wrapper">
         <aside className="preview-sidebar sidebar-scrollbar">
-          <h3>Versions</h3>
+          <h3>{authUser?.role === 'admin' ? 'Reviews' : 'Versions'}</h3>
           <div className="preview-sidebar-list">
-            {page && versions.map((version) => {
+            {page && authUser?.role === 'admin' ? reviews.map((review) => {
+              const v = review.versionNumber;
+              const isSelected = isExplicitVersion
+                ? v === historicalVersion?.versionNumber
+                : v === (page.activeReviewId && typeof page.activeReviewId === 'object' && 'versionNumber' in page.activeReviewId ? page.activeReviewId.versionNumber : undefined);
+              const targetUrl = `/pages/${pageId}/versions/${v}/preview`;
+
+              return (
+                <div key={review._id} style={{ position: 'relative' }}>
+                  <Link 
+                    to={targetUrl}
+                    className="preview-sidebar-item" 
+                    style={{ 
+                      cursor: 'pointer', 
+                      opacity: isSelected ? 1 : 0.6,
+                      borderLeft: isSelected ? '3px solid var(--primary-500)' : '1px solid transparent',
+                      backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.02)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      textDecoration: 'none',
+                      color: 'white',
+                      padding: '10px 10px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '8px' }}>
+                      <span style={{ fontWeight: 600, whiteSpace: 'nowrap', flex: '0 0 auto' }}>Version {v}</span>
+                      <div style={{ marginLeft: 'auto', flex: '0 0 auto', whiteSpace: 'nowrap' }}>
+                        <ReviewStatusBadge status={review.status} />
+                      </div>
+                    </div>
+                    {review.publishedAt && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          fontWeight: 600, 
+                          color: page.publishedVersionNumber === v ? '#fbbf24' : '#a1a1aa',
+                          letterSpacing: '0.05em' 
+                        }}>
+                          {page.publishedVersionNumber === v ? 'LIVE' : 'PUBLISHED'}
+                        </span>
+                      </div>
+                    )}
+                  </Link>
+                </div>
+              );
+            }) : page && versions.map((version) => {
               const v = version.versionNumber;
               const isSelected = isExplicitVersion
                 ? v === historicalVersion?.versionNumber

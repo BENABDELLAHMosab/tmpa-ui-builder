@@ -54,9 +54,23 @@ export const pageService = {
     return response.json();
   },
 
-  approvePage: async (pageId: string): Promise<UiPage> => {
-    const response = await fetch(`${API_URL}/pages/${pageId}/approve`, {
+  updateReviewToLatest: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reviews/update-to-latest`, {
       method: "POST",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to update review to latest version");
+    }
+
+    return response.json();
+  },
+
+  approvePage: async (pageId: string, reviewId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reviews/${reviewId}/approve`, {
+      method: "PATCH",
       headers: getHeaders(),
     });
 
@@ -68,9 +82,9 @@ export const pageService = {
     return response.json();
   },
 
-  rejectPage: async (pageId: string, rejectionReason: string): Promise<UiPage> => {
-    const response = await fetch(`${API_URL}/pages/${pageId}/reject`, {
-      method: "POST",
+  rejectPage: async (pageId: string, reviewId: string, rejectionReason: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reviews/${reviewId}/request-changes`, {
+      method: "PATCH",
       headers: getHeaders(),
       body: JSON.stringify({ rejectionReason }),
     });
@@ -213,6 +227,20 @@ export const pageService = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || "Failed to dismiss rejection feedback");
+    }
+
+    return response.json();
+  },
+
+  getPageReviews: async (pageId: string): Promise<any[]> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reviews`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch page reviews");
     }
 
     return response.json();

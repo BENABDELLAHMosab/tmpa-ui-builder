@@ -41,7 +41,7 @@
 .preview-sidebar {
   width: 220px;
   background-color: var(--navy-800);
-  padding: 1.5rem;
+  padding: 1.5rem 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;

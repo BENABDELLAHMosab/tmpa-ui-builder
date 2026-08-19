@@ -1,6 +1,6 @@
-import { generateContentHash, stableSerialize } from './contentHash';
+ import { generateContentHash, stableSerialize } from './contentHash';
 
-export function canonicalizeCustomComponentTemplate(template: any): any {
+export default function canonicalizeCustomComponentTemplate(template: any): any {
   if (!template || !template.rootComponentId || !Array.isArray(template.components)) {
     return null;
   }

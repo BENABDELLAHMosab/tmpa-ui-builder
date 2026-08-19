@@ -39,7 +39,16 @@ const PageList = ({ pages, onDelete }: PageListProps) => {
               <td style={{ fontWeight: 500, color: 'var(--color-primary)' }}>{page.name}</td>
               <td style={{ color: 'var(--color-muted)' }}>{page.description || '-'}</td>
               <td><StatusBadge status={page.status} /></td>
-              <td>v{page.version}</td>
+              <td>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '0.85rem' }}>Current v{page.version}</span>
+                  {page.publishedVersionNumber != null && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-published)', fontWeight: 600 }}>
+                      LIVE v{page.publishedVersionNumber}
+                    </span>
+                  )}
+                </div>
+              </td>
               <td>{new Date(page.updatedAt).toLocaleDateString()}</td>
               <td>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
