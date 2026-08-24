@@ -9,6 +9,7 @@ import ComponentSidebar from '../components/builder/ComponentSidebar';
 import BuilderCanvas from '../components/builder/BuilderCanvas';
 import PropertiesPanel from '../components/builder/PropertiesPanel';
 import HistoryPanel from '../components/builder/HistoryPanel';
+import { applyFormatting } from '../utils/componentFormatting';
 import ComponentRenderer from '../components/renderers/ComponentRenderer';
 import SaveCustomComponentModal from '../components/builder/SaveCustomComponentModal';
 import DeleteCustomComponentModal from '../components/builder/DeleteCustomComponentModal';
@@ -339,6 +340,8 @@ const BuilderPage = () => {
   const [activeCustomComponentData, setActiveCustomComponentData] = useState<{ id: string, name: string } | null>(null);
   const [dragTargetState, setDragTargetState] = useState<DragTargetState | null>(null);
   const [resizeMatches, setResizeMatches] = useState<ResizeMatches | null>(null);
+  const [formatPainterSourceId, setFormatPainterSourceId] = useState<string | null>(null);
+  const [formatPainterError, setFormatPainterError] = useState<string | null>(null);
 
   const smartGuidesRef = useRef<SmartGuidesRendererHandle>(null);
   const dragSnapshotRef = useRef<DragSnapshot | null>(null);
@@ -384,6 +387,22 @@ const BuilderPage = () => {
     const cleanComponents = page.schema.components || [];
     return JSON.stringify(components) !== JSON.stringify(cleanComponents);
   }, [components, page]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (formatPainterSourceId) {
+          setFormatPainterSourceId(null);
+          setFormatPainterError(null);
+        } else if (selectedComponentId) {
+          setSelectedComponentId(null);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [formatPainterSourceId, selectedComponentId]);
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -449,7 +468,32 @@ const BuilderPage = () => {
     setSelectedComponentId(newComponent.id);
   };
 
-  const handleSelectComponent = (componentId: string) => {
+  const handleSelectComponent = (componentId: string | null) => {
+    if (formatPainterSourceId && componentId && componentId !== formatPainterSourceId) {
+      // We are in Format Painter mode and clicked a target
+      const sourceComp = components.find(c => c.id === formatPainterSourceId);
+      const targetComp = components.find(c => c.id === componentId);
+      
+      if (sourceComp && targetComp) {
+        if (sourceComp.type !== targetComp.type) {
+          setFormatPainterError("Formatting can only be copied between components of the same type.");
+          setTimeout(() => setFormatPainterError(null), 3000);
+          return;
+        }
+
+        setComponents(prev => prev.map(comp => 
+          comp.id === componentId ? applyFormatting(comp, sourceComp) : comp
+        ));
+      }
+      
+      setFormatPainterSourceId(null);
+      return;
+    }
+    
+    // Normal selection
+    if (componentId === null && formatPainterSourceId) {
+       setFormatPainterSourceId(null);
+    }
     setSelectedComponentId(componentId);
   };
 
@@ -1264,6 +1308,18 @@ const BuilderPage = () => {
           </div>
         )}
         
+        {formatPainterSourceId && (
+          <div className="builder-success-toast" style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}>
+            🖌️ Format Painter active — select a target to apply formatting (Press ESC to cancel)
+          </div>
+        )}
+
+        {formatPainterError && (
+          <div className="builder-error-toast">
+            {formatPainterError}
+          </div>
+        )}
+
         {error && page && (
           <div className="builder-error-toast">
             {error}
@@ -1307,6 +1363,11 @@ const BuilderPage = () => {
               onUpdateLayout={handleUpdateComponentLayout}
               onDelete={handleDeleteComponent}
               onSaveAsComponent={handleOpenSaveComponentModal}
+              formatPainterSourceId={formatPainterSourceId}
+              onToggleFormatPainter={(id) => {
+                setFormatPainterSourceId(id);
+                setFormatPainterError(null);
+              }}
             />
           ) : (
             <HistoryPanel

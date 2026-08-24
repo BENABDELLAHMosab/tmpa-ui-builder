@@ -20,9 +20,20 @@ interface PropertiesPanelProps {
   onUpdateLayout?: <K extends keyof BuilderComponentLayout>(componentId: string, key: K, value: BuilderComponentLayout[K]) => void;
   onDelete: (componentId: string) => void;
   onSaveAsComponent?: (componentId: string) => void;
+  formatPainterSourceId?: string | null;
+  onToggleFormatPainter?: (id: string | null) => void;
 }
 
-const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUpdateLayout, onDelete, onSaveAsComponent }: PropertiesPanelProps) => {
+const PropertiesPanel = ({ 
+  selectedComponent, 
+  onUpdateProps, 
+  onUpdateStyle, 
+  onUpdateLayout, 
+  onDelete, 
+  onSaveAsComponent,
+  formatPainterSourceId,
+  onToggleFormatPainter
+}: PropertiesPanelProps) => {
   if (!selectedComponent) {
     return (
       <div className="properties-panel">
@@ -73,9 +84,26 @@ const PropertiesPanel = ({ selectedComponent, onUpdateProps, onUpdateStyle, onUp
 
   return (
     <div className="properties-panel">
-      <div className="properties-header">
-        <h3>Properties</h3>
-        <span className="properties-badge">{selectedComponent.type}</span>
+      <div className="properties-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ margin: 0 }}>Properties</h3>
+          <span className="properties-badge">{selectedComponent.type}</span>
+        </div>
+        <button
+          className={`btn ${formatPainterSourceId === selectedComponent.id ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => onToggleFormatPainter?.(formatPainterSourceId ? null : selectedComponent.id)}
+          title="Format Painter"
+          style={{ 
+            padding: '4px 8px', 
+            minWidth: 'auto',
+            height: '28px',
+            backgroundColor: formatPainterSourceId === selectedComponent.id ? '#1e3a66' : '#ffffff',
+            color: formatPainterSourceId === selectedComponent.id ? '#ffffff' : '#475569',
+            border: `1px solid ${formatPainterSourceId === selectedComponent.id ? '#1e3a66' : '#cbd5e1'}`
+          }}
+        >
+          🖌️
+        </button>
       </div>
       
       <div className="properties-content">
