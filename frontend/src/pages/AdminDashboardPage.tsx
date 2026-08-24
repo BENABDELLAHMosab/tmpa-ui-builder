@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { pageService } from '../services/page.service';
 import type { UiPage } from '../types/page';
 import PortalLayout from '../components/layout/PortalLayout';
@@ -28,6 +28,7 @@ const getAdminDisplayVersion = (page: UiPage, currentTab?: string): number => {
 
 const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [pages, setPages] = useState<UiPage[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +42,21 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
   useEffect(() => {
     fetchPages();
     if (view === 'publication') {
-      setPubTab('approved');
+      const searchParams = new URLSearchParams(location.search);
+      const tabParam = searchParams.get('tab');
+      if (tabParam === 'published') {
+        setPubTab('published');
+      } else {
+        setPubTab('approved');
+      }
     }
-  }, [view]);
+  }, [view, location.search]);
+
+  // Sync pubTab to URL without triggering a full fetch every time if we just click tabs
+  const handleTabChange = (newTab: 'approved' | 'published') => {
+    setPubTab(newTab);
+    navigate(`/admin/publication?tab=${newTab}`, { replace: true });
+  };
 
   const fetchPages = async () => {
     try {
@@ -172,7 +185,7 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
         {view === 'publication' && (
           <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)' }}>
             <button 
-              onClick={() => setPubTab('approved')}
+              onClick={() => handleTabChange('approved')}
               style={{
                 background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer',
                 fontWeight: pubTab === 'approved' ? 600 : 500,
@@ -184,7 +197,7 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
               Approved ({pages.filter(p => p.activeReviewId && typeof p.activeReviewId === 'object' && 'status' in p.activeReviewId && p.activeReviewId.status === 'approved' && !('publishedAt' in p.activeReviewId && p.activeReviewId.publishedAt)).length})
             </button>
             <button 
-              onClick={() => setPubTab('published')}
+              onClick={() => handleTabChange('published')}
               style={{
                 background: 'none', border: 'none', padding: '12px 16px', cursor: 'pointer',
                 fontWeight: pubTab === 'published' ? 600 : 500,
@@ -247,7 +260,11 @@ const AdminDashboardPage = ({ view = 'pending' }: AdminDashboardPageProps) => {
                           <button
                             onClick={() => {
                               const v = getAdminDisplayVersion(page, pubTab);
-                              navigate(`/pages/${page._id}/versions/${v}/preview`);
+                              let returnTo = '/admin/pending-requests';
+                              if (view === 'publication') {
+                                returnTo = `/admin/publication?tab=${pubTab}`;
+                              }
+                              navigate(`/pages/${page._id}/versions/${v}/preview?returnTo=${encodeURIComponent(returnTo)}`);
                             }}
                             className="btn btn-secondary"
                             disabled={actionLoadingId === page._id}

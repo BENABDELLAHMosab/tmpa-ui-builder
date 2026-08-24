@@ -128,6 +128,24 @@ const PreviewPage = () => {
     };
   }, [pageId, versionNumber]);
 
+  const searchParams = new URLSearchParams(location.search);
+  const rawReturnTo = searchParams.get('returnTo');
+  
+  const isValidReturnTo = (url: string | null) => {
+    if (!url) return false;
+    return url.startsWith('/admin/') || url.startsWith('/developer/');
+  };
+  
+  const safeReturnTo = isValidReturnTo(rawReturnTo) ? rawReturnTo : null;
+
+  const handleAdminBack = () => {
+    if (safeReturnTo) {
+      navigate(safeReturnTo);
+    } else {
+      navigate('/admin/dashboard');
+    }
+  };
+
   const handleBackToBuilder = () => {
     if (from) {
       navigate(from);
@@ -232,31 +250,43 @@ const PreviewPage = () => {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          {authUser?.role === 'user-developer' && (
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                if (isExplicitVersion) {
-                  navigate(`/builder/${pageId}`);
-                } else {
-                  handleBackToBuilder();
-                }
-              }}
-            >
-              {isExplicitVersion ? "Open builder" : "Back to builder"}
-            </button>
-          )}
-          {!isExplicitVersion && (
+          {authUser?.role === 'admin' ? (
             <button
               className="btn btn-primary"
-              onClick={handleBackToDashboard}
+              onClick={handleAdminBack}
               style={{ backgroundColor: 'var(--navy-950)' }}
             >
-              Back to dashboard
+              &larr; Back
             </button>
-          )}
-          {isExplicitVersion && (
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>This preview opened in a separate tab.</span>
+          ) : (
+            <>
+              {authUser?.role === 'user-developer' && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    if (isExplicitVersion) {
+                      navigate(`/builder/${pageId}`);
+                    } else {
+                      handleBackToBuilder();
+                    }
+                  }}
+                >
+                  {isExplicitVersion ? "Open builder" : "Back to builder"}
+                </button>
+              )}
+              {!isExplicitVersion && (
+                <button
+                  className="btn btn-primary"
+                  onClick={handleBackToDashboard}
+                  style={{ backgroundColor: 'var(--navy-950)' }}
+                >
+                  Back to dashboard
+                </button>
+              )}
+              {isExplicitVersion && (
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>This preview opened in a separate tab.</span>
+              )}
+            </>
           )}
         </div>
       </header>
@@ -270,7 +300,7 @@ const PreviewPage = () => {
               const isSelected = isExplicitVersion
                 ? v === historicalVersion?.versionNumber
                 : v === (page.activeReviewId && typeof page.activeReviewId === 'object' && 'versionNumber' in page.activeReviewId ? page.activeReviewId.versionNumber : undefined);
-              const targetUrl = `/pages/${pageId}/versions/${v}/preview`;
+              const targetUrl = `/pages/${pageId}/versions/${v}/preview${location.search}`;
 
               return (
                 <div key={review._id} style={{ position: 'relative' }}>
@@ -320,7 +350,8 @@ const PreviewPage = () => {
                   : v === page.version;
               const isCurrent = v === page.version;
               const isPublished = v === page.publishedVersionNumber;
-              const targetUrl = v === page.version && isExplicitVersion ? `/preview/${pageId}` : `/pages/${pageId}/versions/${v}/preview`;
+              const baseTargetUrl = v === page.version && isExplicitVersion ? `/preview/${pageId}` : `/pages/${pageId}/versions/${v}/preview`;
+              const targetUrl = `${baseTargetUrl}${location.search}`;
 
               const canDelete = !isCurrent && !isPublished && authUser?.role === 'user-developer';
               const isDeleting = deletingVersionNumber === v;
