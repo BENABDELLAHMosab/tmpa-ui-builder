@@ -8,6 +8,9 @@ import { clamp, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../.
 import { getHighestZIndex } from '../../utils/layers';
 import { buildComponentsByParent, getContainerInnerDimensions, CONTAINER_STYLE_DEFAULTS } from '../../utils/container';
 import type { DragTargetState } from '../../utils/container';
+import { computeResizeSnap, getComponentCanvasRect, getComponentCanvasOffset } from '../../utils/smartGuides';
+import type { Bounds, GuideLine } from '../../utils/smartGuides';
+import SmartGuidesRenderer from './SmartGuidesRenderer';
 import '../../styles/builder.css';
 
 interface DraggableCanvasItemProps {
@@ -19,6 +22,8 @@ interface DraggableCanvasItemProps {
   onResizeComponent: (componentId: string, dimensions: { width: number; height: number }) => void;
   maxWidth: number;
   maxHeight: number;
+  updateSmartGuides?: (guides: GuideLine[]) => void;
+  clearSmartGuides?: () => void;
 }
 
 type ResizeSession = {
@@ -37,10 +42,13 @@ const DraggableCanvasItem = ({
   onSelectComponent, 
   onResizeComponent,
   maxWidth,
-  maxHeight
+  maxHeight,
+  updateSmartGuides,
+  clearSmartGuides
 }: DraggableCanvasItemProps) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
+  const siblingsBoundsRef = useRef<Bounds[]>([]);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: comp.id,
@@ -66,6 +74,10 @@ const DraggableCanvasItem = ({
       width: comp.layout?.width ?? 300,
       height: comp.layout?.height ?? 60,
     };
+    
+    siblingsBoundsRef.current = components
+      .filter(c => c.parentId === comp.parentId && c.id !== comp.id)
+      .map(c => getComponentCanvasRect(c, components));
   };
 
   const handleResizeMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -86,7 +98,24 @@ const DraggableCanvasItem = ({
     const safeWidth = Math.round(clamp(nextWidth, minDims.width, safeMaxWidth));
     const safeHeight = Math.round(clamp(nextHeight, minDims.height, safeMaxHeight));
 
-    onResizeComponent(comp.id, { width: safeWidth, height: safeHeight });
+    const globalOffset = getComponentCanvasOffset(comp, components);
+    const currentLeft = globalOffset.x;
+    const currentTop = globalOffset.y;
+    const currentRight = currentLeft + safeWidth;
+    const currentBottom = currentTop + safeHeight;
+    const snap = computeResizeSnap(currentLeft, currentTop, safeWidth, safeHeight, currentRight, currentBottom, siblingsBoundsRef.current);
+    
+    const finalWidth = Math.round(clamp(snap.snappedWidth, minDims.width, safeMaxWidth));
+    const finalHeight = Math.round(clamp(snap.snappedHeight, minDims.height, safeMaxHeight));
+
+    if (updateSmartGuides) {
+      const activeGuides: GuideLine[] = [];
+      if (snap.guideX) activeGuides.push(snap.guideX);
+      if (snap.guideY) activeGuides.push(snap.guideY);
+      updateSmartGuides(activeGuides);
+    }
+
+    onResizeComponent(comp.id, { width: finalWidth, height: finalHeight });
   };
 
   const handleResizeEnd = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -98,6 +127,8 @@ const DraggableCanvasItem = ({
     }
     setIsResizing(false);
     resizeSessionRef.current = null;
+    siblingsBoundsRef.current = [];
+    if (clearSmartGuides) clearSmartGuides();
   };
 
   const displayedZIndex = isDragging || isResizing ? interactionZIndex : (comp.layout?.zIndex ?? 1);
@@ -177,10 +208,13 @@ const DraggableContainerItem = ({
   globalSelectedComponentId,
   dragTargetState,
   componentsByParent,
-  checkChildSelected
+  checkChildSelected,
+  updateSmartGuides,
+  clearSmartGuides
 }: DraggableContainerItemProps) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
+  const siblingsBoundsRef = useRef<Bounds[]>([]);
 
   const { attributes, listeners, setNodeRef: setDraggableNodeRef, transform, isDragging } = useDraggable({
     id: comp.id,
@@ -215,6 +249,10 @@ const DraggableContainerItem = ({
       width: comp.layout?.width ?? 300,
       height: comp.layout?.height ?? 60,
     };
+    
+    siblingsBoundsRef.current = components
+      .filter(c => c.parentId === comp.parentId && c.id !== comp.id)
+      .map(c => getComponentCanvasRect(c, components));
   };
 
   const handleResizeMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -249,7 +287,24 @@ const DraggableContainerItem = ({
     const safeWidth = Math.round(clamp(nextWidth, requiredWidth, safeMaxWidth));
     const safeHeight = Math.round(clamp(nextHeight, requiredHeight, safeMaxHeight));
 
-    onResizeComponent(comp.id, { width: safeWidth, height: safeHeight });
+    const globalOffset = getComponentCanvasOffset(comp, components);
+    const currentLeft = globalOffset.x;
+    const currentTop = globalOffset.y;
+    const currentRight = currentLeft + safeWidth;
+    const currentBottom = currentTop + safeHeight;
+    const snap = computeResizeSnap(currentLeft, currentTop, safeWidth, safeHeight, currentRight, currentBottom, siblingsBoundsRef.current);
+    
+    const finalWidth = Math.round(clamp(snap.snappedWidth, requiredWidth, safeMaxWidth));
+    const finalHeight = Math.round(clamp(snap.snappedHeight, requiredHeight, safeMaxHeight));
+
+    if (updateSmartGuides) {
+      const activeGuides: GuideLine[] = [];
+      if (snap.guideX) activeGuides.push(snap.guideX);
+      if (snap.guideY) activeGuides.push(snap.guideY);
+      updateSmartGuides(activeGuides);
+    }
+
+    onResizeComponent(comp.id, { width: finalWidth, height: finalHeight });
   };
 
   const handleResizeEnd = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -261,6 +316,8 @@ const DraggableContainerItem = ({
     }
     setIsResizing(false);
     resizeSessionRef.current = null;
+    siblingsBoundsRef.current = [];
+    if (clearSmartGuides) clearSmartGuides();
   };
 
   const displayedZIndex = isDragging || isResizing ? interactionZIndex : (comp.layout?.zIndex ?? 1);
@@ -353,6 +410,8 @@ const DraggableContainerItem = ({
               dragTargetState={dragTargetState}
               componentsByParent={componentsByParent}
               checkChildSelected={checkChildSelected}
+              updateSmartGuides={updateSmartGuides}
+              clearSmartGuides={clearSmartGuides}
             />
           ) : (
             <DraggableCanvasItem
@@ -365,6 +424,8 @@ const DraggableContainerItem = ({
               onResizeComponent={onResizeComponent}
               maxWidth={innerWidth - (child.layout?.x ?? 0)}
               maxHeight={innerHeight - (child.layout?.y ?? 0)}
+              updateSmartGuides={updateSmartGuides}
+              clearSmartGuides={clearSmartGuides}
             />
           )
         ))}
@@ -407,9 +468,12 @@ interface BuilderCanvasProps {
   onResizeComponent: (componentId: string, dimensions: { width: number; height: number }) => void;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   dragTargetState: DragTargetState | null;
+  updateSmartGuides?: (guides: GuideLine[]) => void;
+  clearSmartGuides?: () => void;
+  smartGuidesRef?: React.RefObject<any>;
 }
 
-const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onResizeComponent, canvasRef, dragTargetState }: BuilderCanvasProps) => {
+const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onResizeComponent, canvasRef, dragTargetState, updateSmartGuides, clearSmartGuides, smartGuidesRef }: BuilderCanvasProps) => {
   const hasComponents = components.length > 0;
   const interactionZIndex = getHighestZIndex(components) + 1;
   
@@ -452,6 +516,7 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
         }}
         onClick={() => onSelectComponent('')}
       >
+        {smartGuidesRef && <SmartGuidesRenderer ref={smartGuidesRef} />}
         {!hasComponents ? (
           <div className="empty-canvas" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#94a3b8' }}>
             Empty canvas. Drag components here.
@@ -476,6 +541,8 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
                   dragTargetState={dragTargetState}
                   componentsByParent={componentsByParent}
                   checkChildSelected={checkChildSelected}
+                  updateSmartGuides={updateSmartGuides}
+                  clearSmartGuides={clearSmartGuides}
                 />
               );
             }
@@ -491,6 +558,8 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
                 onResizeComponent={onResizeComponent}
                 maxWidth={CANVAS_WIDTH - (comp.layout?.x ?? 0)}
                 maxHeight={CANVAS_HEIGHT - (comp.layout?.y ?? 0)}
+                updateSmartGuides={updateSmartGuides}
+                clearSmartGuides={clearSmartGuides}
               />
             );
           })

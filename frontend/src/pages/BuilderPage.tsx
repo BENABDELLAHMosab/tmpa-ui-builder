@@ -20,11 +20,23 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
-  closestCenter,
   pointerWithin,
   DragOverlay
 } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
+import type {
+  DragEndEvent, 
+  DragStartEvent, 
+  DragOverEvent,
+  Modifier,
+  CollisionDetection
+} from '@dnd-kit/core';
+import type { SmartGuidesRendererHandle } from '../components/builder/SmartGuidesRenderer';
+import {
+  getComponentCanvasRect, 
+  computeDragSnap,
+  getComponentCanvasOffset
+} from '../utils/smartGuides';
+import type { DragSnapshot, GuideLine } from '../utils/smartGuides';
 import { clamp, normalizeComponentsLayout, DEFAULT_LAYOUTS, CANVAS_WIDTH, CANVAS_HEIGHT, MIN_DIMENSIONS_BY_TYPE } from '../utils/canvas';
 import { generateId } from '../utils/id';
 import { TABLE_STYLE_DEFAULTS } from '../utils/table';
@@ -278,6 +290,32 @@ const moveComponentToParent = (
 };
 
 
+const customCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+
+  if (pointerCollisions.length > 0) {
+    const sortedCollisions = [...pointerCollisions].sort((a, b) => {
+      const aData = a.data?.droppableContainer?.data?.current;
+      const bData = b.data?.droppableContainer?.data?.current;
+      
+      const aIsCanvas = a.id === 'builder-canvas' || aData?.dropType === 'canvas';
+      const bIsCanvas = b.id === 'builder-canvas' || bData?.dropType === 'canvas';
+      
+      if (aIsCanvas && !bIsCanvas) return 1;
+      if (!aIsCanvas && bIsCanvas) return -1;
+      
+      const aZ = aData?.zIndex ?? 0;
+      const bZ = bData?.zIndex ?? 0;
+      return bZ - aZ;
+    });
+
+    return sortedCollisions;
+  }
+
+  return pointerCollisions;
+};
+
+
 const BuilderPage = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
@@ -293,6 +331,10 @@ const BuilderPage = () => {
   const [activeCanvasComponentId, setActiveCanvasComponentId] = useState<string | null>(null);
   const [activeCustomComponentData, setActiveCustomComponentData] = useState<{ id: string, name: string } | null>(null);
   const [dragTargetState, setDragTargetState] = useState<DragTargetState | null>(null);
+
+  const smartGuidesRef = useRef<SmartGuidesRendererHandle>(null);
+  const dragSnapshotRef = useRef<DragSnapshot | null>(null);
+  const lastSnappedDeltaRef = useRef<{ x: number, y: number } | null>(null);
   
   type RightPanelMode = "properties" | "history";
   const [rightPanelMode, setRightPanelMode] = useState<RightPanelMode>("properties");
@@ -327,79 +369,7 @@ const BuilderPage = () => {
     useSensor(KeyboardSensor)
   );
 
-  const customCollisionDetection = useCallback((args: any) => {
-    let allowedDroppables = args.droppableContainers;
 
-    const activeData = args.active.data.current;
-    const isCanvas = activeData?.source === 'canvas';
-    const activeType = activeData?.componentType;
-    const activeId = args.active.id;
-
-    if (isCanvas && activeType === 'Container') {
-      const forbiddenIds = new Set<string>();
-      forbiddenIds.add(String(activeId));
-      const descendants = getDescendantIds(components, String(activeId));
-      descendants.forEach(id => forbiddenIds.add(id));
-
-      allowedDroppables = args.droppableContainers.filter((c: any) => {
-        const match = String(c.id).match(/^container-drop-(.+)$/);
-        if (match) {
-          const compId = match[1];
-          if (forbiddenIds.has(compId)) {
-            return false;
-          }
-        }
-        return true;
-      });
-    }
-
-    const newArgs = { ...args, droppableContainers: allowedDroppables };
-    const pointerCollisions = pointerWithin(newArgs);
-    
-    if (pointerCollisions.length > 0) {
-      const isSidebar = activeData?.source === 'sidebar';
-      const isKeyboard = !args.pointerCoordinates;
-
-      if (isSidebar || (isCanvas && !isKeyboard)) {
-        const containers = pointerCollisions.filter(c => String(c.id).startsWith('container-drop-'));
-        if (containers.length > 0) {
-          const sorted = containers.sort((a, b) => {
-            const zA = a.data?.droppableContainer?.data?.current?.zIndex ?? 0;
-            const zB = b.data?.droppableContainer?.data?.current?.zIndex ?? 0;
-            return zB - zA;
-          });
-          return [sorted[0]];
-        }
-        const canvasCollision = pointerCollisions.find(c => c.id === 'builder-canvas');
-        return canvasCollision ? [canvasCollision] : [];
-      } else if (isCanvas && isKeyboard) {
-        if (activeType === 'Container') {
-          return closestCenter({
-            ...newArgs,
-            droppableContainers: allowedDroppables.filter((c: any) => c.id === 'builder-canvas')
-          });
-        } else {
-          const parentId = activeData?.parentId;
-          if (parentId) {
-            return closestCenter({
-              ...newArgs,
-              droppableContainers: allowedDroppables.filter((c: any) => c.id === `container-drop-${parentId}`)
-            });
-          } else {
-            return closestCenter({
-              ...newArgs,
-              droppableContainers: allowedDroppables.filter((c: any) => c.id === 'builder-canvas')
-            });
-          }
-        }
-      } else {
-        return pointerCollisions;
-      }
-    } else if (!args.pointerCoordinates) {
-      return closestCenter(newArgs);
-    }
-    return [];
-  }, [components]);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!page || !page.schema) return false;
@@ -817,6 +787,11 @@ const BuilderPage = () => {
     setActiveCanvasComponentId(null);
     setActiveCustomComponentData(null);
     setDragTargetState(null);
+    dragSnapshotRef.current = null;
+    lastSnappedDeltaRef.current = null;
+    if (smartGuidesRef.current) {
+      smartGuidesRef.current.clearGuides();
+    }
   }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -835,7 +810,47 @@ const BuilderPage = () => {
         name: active.data.current.name
       });
     } else if (isCanvasItem) {
-      setActiveCanvasComponentId(active.id as string);
+      const activeId = active.id as string;
+      setActiveCanvasComponentId(activeId);
+      
+      const activeComp = components.find(c => c.id === activeId);
+      if (activeComp) {
+        const initialBounds = getComponentCanvasRect(activeComp, components);
+        const siblingsComps = components.filter(c => c.parentId === activeComp.parentId && c.id !== activeId);
+        const siblings = siblingsComps.map(c => getComponentCanvasRect(c, components));
+        
+        let parentOffsetX = 0;
+        let parentOffsetY = 0;
+        let parentInnerWidth = CANVAS_WIDTH;
+        let parentInnerHeight = CANVAS_HEIGHT;
+
+        if (activeComp.parentId) {
+          const parent = components.find(c => c.id === activeComp.parentId);
+          if (parent) {
+            const offset = getComponentCanvasOffset(parent, components);
+            const borderWidth = typeof parent.style?.borderWidth === 'number' ? Math.max(0, parent.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+            parentOffsetX = offset.x + borderWidth;
+            parentOffsetY = offset.y + borderWidth;
+            const dims = getContainerInnerDimensions(
+              parent.layout?.width ?? 300,
+              parent.layout?.height ?? 60,
+              borderWidth
+            );
+            parentInnerWidth = dims.innerWidth;
+            parentInnerHeight = dims.innerHeight;
+          }
+        }
+        
+        dragSnapshotRef.current = {
+          activeId,
+          parentOffsetX,
+          parentOffsetY,
+          parentInnerWidth,
+          parentInnerHeight,
+          initialBounds,
+          siblings
+        };
+      }
     }
   };
 
@@ -881,6 +896,11 @@ const BuilderPage = () => {
         }
       }
 
+      if (active.id === over.data.current.containerId) {
+        setDragTargetState(null);
+        return;
+      }
+
       const evaluation = evaluateContainerDrop(components, activeDescriptor, over.data.current.containerId);
       
       setDragTargetState(prev => {
@@ -903,7 +923,6 @@ const BuilderPage = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     try {
       const { active, over } = event;
-      if (!over) return;
 
       const isCanvasItem = isCanvasDragData(active.data?.current);
       if (isCanvasItem) {
@@ -920,44 +939,87 @@ const BuilderPage = () => {
         const width = activeComponent.layout?.width ?? 300;
         const height = activeComponent.layout?.height ?? 60;
 
-        let targetParentId: string | null = null;
-        let targetRect: { top: number; left: number } = { top: 0, left: 0 };
+        let targetParentId: string | null = activeComponent.parentId ?? null;
+        let isReparenting = false;
+        let targetRect: { top: number; left: number } | null = null;
         let maxWidth = CANVAS_WIDTH;
         let maxHeight = CANVAS_HEIGHT;
 
-        if (over.id === 'builder-canvas' || over.data?.current?.dropType === 'canvas') {
-          if (!canvasRef.current) return;
-          targetRect = canvasRef.current.getBoundingClientRect();
-        } else if (isContainerDropData(over.data?.current)) {
-          const containerId = over.data.current.containerId;
-          const evaluation = evaluateContainerDrop(components, { type: activeComponent.type, width, height, id: activeComponent.id }, containerId);
-          if (!evaluation.valid) return;
+        if (over) {
+          if (over.id === 'builder-canvas' || over.data?.current?.dropType === 'canvas') {
+            if (canvasRef.current) {
+              targetRect = canvasRef.current.getBoundingClientRect();
+              if (activeComponent.parentId !== null) {
+                isReparenting = true;
+                targetParentId = null;
+              }
+            }
+          } else if (isContainerDropData(over.data?.current)) {
+            const containerId = over.data.current.containerId;
+            const evaluation = evaluateContainerDrop(components, { type: activeComponent.type, width, height, id: activeComponent.id }, containerId);
+            
+            if (evaluation.valid) {
+              const container = components.find(c => c.id === containerId);
+              if (container && over.rect) {
+                targetRect = over.rect;
+                if (activeComponent.parentId !== containerId) {
+                  isReparenting = true;
+                  targetParentId = containerId;
+                }
+                const borderWidth = typeof container.style?.borderWidth === 'number' 
+                    ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+                const { innerWidth, innerHeight } = getContainerInnerDimensions(
+                  container.layout?.width ?? 300,
+                  container.layout?.height ?? 60,
+                  borderWidth
+                );
+                maxWidth = innerWidth;
+                maxHeight = innerHeight;
+              }
+            }
+          }
+        }
 
-          const container = components.find(c => c.id === containerId);
-          if (!container || !over.rect) return;
-          
-          targetParentId = containerId;
-          const borderWidth = typeof container.style?.borderWidth === 'number' 
-              ? Math.max(0, container.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
-          const { innerWidth, innerHeight } = getContainerInnerDimensions(
-            container.layout?.width ?? 300,
-            container.layout?.height ?? 60,
-            borderWidth
-          );
-          
-          targetRect = over.rect;
-          maxWidth = innerWidth;
-          maxHeight = innerHeight;
-        } else {
-          return;
+        if (!isReparenting && targetParentId !== null) {
+          const currentParent = components.find(c => c.id === targetParentId);
+          if (currentParent) {
+            const borderWidth = typeof currentParent.style?.borderWidth === 'number' 
+                ? Math.max(0, currentParent.style.borderWidth) : CONTAINER_STYLE_DEFAULTS.borderWidth;
+            const { innerWidth, innerHeight } = getContainerInnerDimensions(
+              currentParent.layout?.width ?? 300,
+              currentParent.layout?.height ?? 60,
+              borderWidth
+            );
+            maxWidth = innerWidth;
+            maxHeight = innerHeight;
+          }
         }
 
         if (width > maxWidth || height > maxHeight) {
           return; 
         }
 
-        const calculatedX = translated.left - targetRect.left;
-        const calculatedY = translated.top - targetRect.top;
+        let calculatedX: number;
+        let calculatedY: number;
+
+        if (isReparenting && targetRect) {
+          const initialRect = active.rect.current.initial;
+          const finalTranslatedLeft = (lastSnappedDeltaRef.current && initialRect) 
+            ? initialRect.left + lastSnappedDeltaRef.current.x 
+            : translated.left;
+          const finalTranslatedTop = (lastSnappedDeltaRef.current && initialRect) 
+            ? initialRect.top + lastSnappedDeltaRef.current.y 
+            : translated.top;
+
+          calculatedX = finalTranslatedLeft - targetRect.left;
+          calculatedY = finalTranslatedTop - targetRect.top;
+        } else {
+          const deltaX = lastSnappedDeltaRef.current ? lastSnappedDeltaRef.current.x : event.delta.x;
+          const deltaY = lastSnappedDeltaRef.current ? lastSnappedDeltaRef.current.y : event.delta.y;
+          
+          calculatedX = (activeComponent.layout?.x ?? 0) + deltaX;
+          calculatedY = (activeComponent.layout?.y ?? 0) + deltaY;
+        }
 
         const nextX = Math.round(clamp(calculatedX, 0, Math.max(0, maxWidth - width)));
         const nextY = Math.round(clamp(calculatedY, 0, Math.max(0, maxHeight - height)));
@@ -965,6 +1027,8 @@ const BuilderPage = () => {
         setComponents(prev => moveComponentToParent(prev, activeComponentId, targetParentId, nextX, nextY));
         return;
       }
+
+      if (!over) return;
 
       const isSidebarItem = isSidebarDragData(active.data?.current);
       if (isSidebarItem && active.data?.current) {
@@ -1110,8 +1174,33 @@ const BuilderPage = () => {
         executeCustomComponentDrop();
       }
     } finally {
-      resetDragState();
+      handleDragCancel();
     }
+  };
+
+  const snapModifier: Modifier = ({ transform, active }) => {
+    if (!dragSnapshotRef.current || !active) return transform;
+    
+    const { snappedDeltaX, snappedDeltaY, guideX, guideY } = computeDragSnap(
+      dragSnapshotRef.current,
+      transform.x,
+      transform.y
+    );
+
+    lastSnappedDeltaRef.current = { x: snappedDeltaX, y: snappedDeltaY };
+    
+    if (smartGuidesRef.current) {
+      const activeGuides: GuideLine[] = [];
+      if (guideX) activeGuides.push(guideX);
+      if (guideY) activeGuides.push(guideY);
+      smartGuidesRef.current.updateGuides(activeGuides);
+    }
+
+    return {
+      ...transform,
+      x: snappedDeltaX,
+      y: snappedDeltaY
+    };
   };
 
   if (loading) {
@@ -1140,6 +1229,7 @@ const BuilderPage = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
+      modifiers={[snapModifier]}
     >
       <div className="builder-layout">
         {page && (
@@ -1189,6 +1279,9 @@ const BuilderPage = () => {
             onResizeComponent={handleResizeComponent}
             canvasRef={canvasRef}
             dragTargetState={dragTargetState}
+            updateSmartGuides={smartGuidesRef.current?.updateGuides}
+            clearSmartGuides={smartGuidesRef.current?.clearGuides}
+            smartGuidesRef={smartGuidesRef}
           />
           
           {rightPanelMode === 'properties' ? (
@@ -1234,9 +1327,12 @@ const BuilderPage = () => {
                   width: activeComp.layout?.width ?? 300,
                   height: activeComp.layout?.height ?? 60,
                   pointerEvents: 'none',
-                  opacity: 0.9,
+                  opacity: 1,
+                  background: 'var(--color-surface)',
                   boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
-                  borderRadius: 'var(--radius-md)'
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-border)',
+                  overflow: 'hidden'
                 }}>
                   <ComponentRenderer component={activeComp} components={components} mode="builder" />
                 </div>
