@@ -117,7 +117,7 @@ const DraggableCanvasItem = ({
       if (snap.guideY) activeGuides.push(snap.guideY);
 
       let sizeMatchIds: string[] = [];
-      if (snap.widthMatchTargetId && snap.heightMatchTargetId && snap.widthMatchTargetId === snap.heightMatchTargetId) {
+      if (snap.widthMatchTargetId && snap.heightMatchTargetId) {
         sizeMatchIds = siblingsBoundsRef.current
           .filter(sib => Math.round(sib.width) === finalWidth && Math.round(sib.height) === finalHeight)
           .map(sib => sib.id);
@@ -327,7 +327,7 @@ const DraggableContainerItem = ({
       if (snap.guideY) activeGuides.push(snap.guideY);
 
       let sizeMatchIds: string[] = [];
-      if (snap.widthMatchTargetId && snap.heightMatchTargetId && snap.widthMatchTargetId === snap.heightMatchTargetId) {
+      if (snap.widthMatchTargetId && snap.heightMatchTargetId) {
         sizeMatchIds = siblingsBoundsRef.current
           .filter(sib => Math.round(sib.width) === finalWidth && Math.round(sib.height) === finalHeight)
           .map(sib => sib.id);
