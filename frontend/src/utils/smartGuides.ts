@@ -12,6 +12,7 @@ export interface GuideLine {
   end: number;
   label?: string;
   type?: 'alignment' | 'dimension';
+  matchId?: string;
 }
 
 export interface Bounds {
@@ -188,7 +189,8 @@ export const computeResizeSnap = (
         id: 'guide-w', axis: 'x', position: currentRight + widthDelta, 
         start: Math.min(sib.top, currentTop) - GUIDE_MARGIN, 
         end: Math.max(sib.bottom, currentBottom) + GUIDE_MARGIN, 
-        label: `W: ${Math.round(sib.width)}px`, type: 'dimension' 
+        label: `W: ${Math.round(sib.width)}px`, type: 'dimension',
+        matchId: sib.id
       };
     }
 
@@ -201,7 +203,8 @@ export const computeResizeSnap = (
         id: 'guide-rx', axis: 'x', position: sib.right, 
         start: Math.min(sib.top, currentTop) - GUIDE_MARGIN, 
         end: Math.max(sib.bottom, currentBottom) + GUIDE_MARGIN, 
-        type: 'alignment' 
+        type: 'alignment',
+        matchId: sib.id
       };
       guideWidth = null;
     }
@@ -215,7 +218,8 @@ export const computeResizeSnap = (
         id: 'guide-h', axis: 'y', position: currentBottom + heightDelta, 
         start: Math.min(sib.left, currentLeft) - GUIDE_MARGIN, 
         end: Math.max(sib.right, currentRight) + GUIDE_MARGIN, 
-        label: `H: ${Math.round(sib.height)}px`, type: 'dimension' 
+        label: `H: ${Math.round(sib.height)}px`, type: 'dimension',
+        matchId: sib.id
       };
     }
 
@@ -228,7 +232,8 @@ export const computeResizeSnap = (
         id: 'guide-by', axis: 'y', position: sib.bottom, 
         start: Math.min(sib.left, currentLeft) - GUIDE_MARGIN, 
         end: Math.max(sib.right, currentRight) + GUIDE_MARGIN, 
-        type: 'alignment' 
+        type: 'alignment',
+        matchId: sib.id
       };
       guideHeight = null;
     }
@@ -238,6 +243,8 @@ export const computeResizeSnap = (
     snappedWidth,
     snappedHeight,
     guideX: guideWidth || guideRightX,
-    guideY: guideHeight || guideBottomY
+    guideY: guideHeight || guideBottomY,
+    widthMatchTargetId: guideWidth ? guideWidth.matchId : (guideRightX ? guideRightX.matchId : null),
+    heightMatchTargetId: guideHeight ? guideHeight.matchId : (guideBottomY ? guideBottomY.matchId : null)
   };
 };

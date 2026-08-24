@@ -316,6 +316,13 @@ const customCollisionDetection: CollisionDetection = (args) => {
 };
 
 
+export interface ResizeMatches {
+  activeId: string | null;
+  widthMatchTargetId: string | null;
+  heightMatchTargetId: string | null;
+  sizeMatchIds?: string[];
+}
+
 const BuilderPage = () => {
   const { pageId } = useParams<{ pageId: string }>();
   const navigate = useNavigate();
@@ -331,6 +338,7 @@ const BuilderPage = () => {
   const [activeCanvasComponentId, setActiveCanvasComponentId] = useState<string | null>(null);
   const [activeCustomComponentData, setActiveCustomComponentData] = useState<{ id: string, name: string } | null>(null);
   const [dragTargetState, setDragTargetState] = useState<DragTargetState | null>(null);
+  const [resizeMatches, setResizeMatches] = useState<ResizeMatches | null>(null);
 
   const smartGuidesRef = useRef<SmartGuidesRendererHandle>(null);
   const dragSnapshotRef = useRef<DragSnapshot | null>(null);
@@ -1279,9 +1287,16 @@ const BuilderPage = () => {
             onResizeComponent={handleResizeComponent}
             canvasRef={canvasRef}
             dragTargetState={dragTargetState}
-            updateSmartGuides={smartGuidesRef.current?.updateGuides}
-            clearSmartGuides={smartGuidesRef.current?.clearGuides}
+            updateSmartGuides={(guides, matches) => {
+              smartGuidesRef.current?.updateGuides(guides);
+              if (matches !== undefined) setResizeMatches(matches);
+            }}
+            clearSmartGuides={() => {
+              smartGuidesRef.current?.clearGuides();
+              setResizeMatches(null);
+            }}
             smartGuidesRef={smartGuidesRef}
+            resizeMatches={resizeMatches}
           />
           
           {rightPanelMode === 'properties' ? (

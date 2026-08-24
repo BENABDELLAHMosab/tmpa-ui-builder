@@ -11,6 +11,7 @@ import type { DragTargetState } from '../../utils/container';
 import { computeResizeSnap, getComponentCanvasRect, getComponentCanvasOffset } from '../../utils/smartGuides';
 import type { Bounds, GuideLine } from '../../utils/smartGuides';
 import SmartGuidesRenderer from './SmartGuidesRenderer';
+import type { ResizeMatches } from '../../pages/BuilderPage';
 import '../../styles/builder.css';
 
 interface DraggableCanvasItemProps {
@@ -22,8 +23,9 @@ interface DraggableCanvasItemProps {
   onResizeComponent: (componentId: string, dimensions: { width: number; height: number }) => void;
   maxWidth: number;
   maxHeight: number;
-  updateSmartGuides?: (guides: GuideLine[]) => void;
+  updateSmartGuides?: (guides: GuideLine[], matches?: ResizeMatches | null) => void;
   clearSmartGuides?: () => void;
+  resizeMatches?: ResizeMatches | null;
 }
 
 type ResizeSession = {
@@ -44,7 +46,8 @@ const DraggableCanvasItem = ({
   maxWidth,
   maxHeight,
   updateSmartGuides,
-  clearSmartGuides
+  clearSmartGuides,
+  resizeMatches
 }: DraggableCanvasItemProps) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
@@ -112,7 +115,23 @@ const DraggableCanvasItem = ({
       const activeGuides: GuideLine[] = [];
       if (snap.guideX) activeGuides.push(snap.guideX);
       if (snap.guideY) activeGuides.push(snap.guideY);
-      updateSmartGuides(activeGuides);
+
+      let sizeMatchIds: string[] = [];
+      if (snap.widthMatchTargetId && snap.heightMatchTargetId && snap.widthMatchTargetId === snap.heightMatchTargetId) {
+        sizeMatchIds = siblingsBoundsRef.current
+          .filter(sib => Math.round(sib.width) === finalWidth && Math.round(sib.height) === finalHeight)
+          .map(sib => sib.id);
+        if (sizeMatchIds.length > 0) {
+          sizeMatchIds.push(comp.id);
+        }
+      }
+
+      updateSmartGuides(activeGuides, {
+        activeId: comp.id,
+        widthMatchTargetId: snap.widthMatchTargetId ?? null,
+        heightMatchTargetId: snap.heightMatchTargetId ?? null,
+        sizeMatchIds
+      });
     }
 
     onResizeComponent(comp.id, { width: finalWidth, height: finalHeight });
@@ -133,6 +152,8 @@ const DraggableCanvasItem = ({
 
   const displayedZIndex = isDragging || isResizing ? interactionZIndex : (comp.layout?.zIndex ?? 1);
 
+  const isSizeMatch = resizeMatches?.sizeMatchIds?.includes(comp.id) ?? false;
+
   const style: React.CSSProperties = {
     position: 'absolute',
     left: comp.layout?.x ?? 0,
@@ -142,8 +163,8 @@ const DraggableCanvasItem = ({
     transform: isDragging ? undefined : CSS.Translate.toString(transform),
     zIndex: displayedZIndex,
     padding: 0,
-    border: isSelected ? '2px solid var(--color-secondary)' : '2px solid transparent',
-    boxShadow: isSelected ? '0 0 0 4px var(--color-info-bg)' : '0 1px 3px rgba(0, 0, 0, 0.05)',
+    border: isSelected && !isSizeMatch ? '2px solid var(--color-secondary)' : '2px solid transparent',
+    boxShadow: isSelected && !isSizeMatch ? '0 0 0 4px var(--color-info-bg)' : '0 1px 3px rgba(0, 0, 0, 0.05)',
     borderRadius: 'var(--radius-md)',
     transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s',
     boxSizing: 'border-box',
@@ -152,6 +173,8 @@ const DraggableCanvasItem = ({
     opacity: isDragging ? 0.3 : 1
   };
 
+  let matchClass = isSizeMatch ? ' size-match' : '';
+
   return (
     <div
       id={comp.id}
@@ -159,7 +182,7 @@ const DraggableCanvasItem = ({
       style={style}
       {...attributes}
       {...listeners}
-      className={`canvas-item-wrapper ${isDragging ? 'is-dragging' : ''} ${isResizing ? 'is-resizing' : ''} child-wrapper`}
+      className={`canvas-item-wrapper ${isDragging ? 'is-dragging' : ''} ${isResizing ? 'is-resizing' : ''} child-wrapper${matchClass}`}
       onClick={(e) => {
         e.stopPropagation();
         onSelectComponent(comp.id);
@@ -210,7 +233,8 @@ const DraggableContainerItem = ({
   componentsByParent,
   checkChildSelected,
   updateSmartGuides,
-  clearSmartGuides
+  clearSmartGuides,
+  resizeMatches
 }: DraggableContainerItemProps) => {
   const [isResizing, setIsResizing] = useState(false);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
@@ -301,7 +325,23 @@ const DraggableContainerItem = ({
       const activeGuides: GuideLine[] = [];
       if (snap.guideX) activeGuides.push(snap.guideX);
       if (snap.guideY) activeGuides.push(snap.guideY);
-      updateSmartGuides(activeGuides);
+
+      let sizeMatchIds: string[] = [];
+      if (snap.widthMatchTargetId && snap.heightMatchTargetId && snap.widthMatchTargetId === snap.heightMatchTargetId) {
+        sizeMatchIds = siblingsBoundsRef.current
+          .filter(sib => Math.round(sib.width) === finalWidth && Math.round(sib.height) === finalHeight)
+          .map(sib => sib.id);
+        if (sizeMatchIds.length > 0) {
+          sizeMatchIds.push(comp.id);
+        }
+      }
+
+      updateSmartGuides(activeGuides, {
+        activeId: comp.id,
+        widthMatchTargetId: snap.widthMatchTargetId ?? null,
+        heightMatchTargetId: snap.heightMatchTargetId ?? null,
+        sizeMatchIds
+      });
     }
 
     onResizeComponent(comp.id, { width: finalWidth, height: finalHeight });
@@ -322,6 +362,8 @@ const DraggableContainerItem = ({
 
   const displayedZIndex = isDragging || isResizing ? interactionZIndex : (comp.layout?.zIndex ?? 1);
 
+  const isSizeMatch = resizeMatches?.sizeMatchIds?.includes(comp.id) ?? false;
+
   const wrapperStyle: React.CSSProperties = {
     position: 'absolute',
     left: comp.layout?.x ?? 0,
@@ -330,7 +372,6 @@ const DraggableContainerItem = ({
     height: comp.layout?.height ?? 60,
     transform: isDragging ? undefined : CSS.Translate.toString(transform),
     zIndex: displayedZIndex,
-    padding: 0,
     border: 'none',
     transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s',
     boxSizing: 'border-box',
@@ -347,12 +388,14 @@ const DraggableContainerItem = ({
     borderWidth
   );
 
+  let matchClass = isSizeMatch ? ' size-match' : '';
+
   return (
     <div
       id={comp.id}
       ref={setDraggableNodeRef}
       style={wrapperStyle}
-      className={`container-wrapper ${isDragging ? 'is-dragging' : ''} ${isResizing ? 'is-resizing' : ''}`}
+      className={`container-wrapper ${isDragging ? 'is-dragging' : ''} ${isResizing ? 'is-resizing' : ''}${matchClass}`}
     >
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <ContainerFrame component={comp} />
@@ -412,6 +455,7 @@ const DraggableContainerItem = ({
               checkChildSelected={checkChildSelected}
               updateSmartGuides={updateSmartGuides}
               clearSmartGuides={clearSmartGuides}
+              resizeMatches={resizeMatches}
             />
           ) : (
             <DraggableCanvasItem
@@ -426,6 +470,7 @@ const DraggableContainerItem = ({
               maxHeight={innerHeight - (child.layout?.y ?? 0)}
               updateSmartGuides={updateSmartGuides}
               clearSmartGuides={clearSmartGuides}
+              resizeMatches={resizeMatches}
             />
           )
         ))}
@@ -437,8 +482,8 @@ const DraggableContainerItem = ({
           inset: 0,
           pointerEvents: 'none',
           zIndex: 3,
-          border: isSelected ? '2px solid var(--color-secondary)' : '1px dashed var(--color-secondary)',
-          boxShadow: isSelected ? '0 0 0 4px var(--color-info-bg)' : 'none',
+          border: isSelected && !isSizeMatch ? '2px solid var(--color-secondary)' : (isChildSelected && !isSizeMatch ? '1px dashed var(--color-secondary)' : 'none'),
+          boxShadow: isSelected && !isSizeMatch ? '0 0 0 4px var(--color-info-bg)' : 'none',
           borderRadius: comp.style?.borderRadius ?? CONTAINER_STYLE_DEFAULTS.borderRadius
         }} />
       )}
@@ -468,12 +513,13 @@ interface BuilderCanvasProps {
   onResizeComponent: (componentId: string, dimensions: { width: number; height: number }) => void;
   canvasRef: React.RefObject<HTMLDivElement | null>;
   dragTargetState: DragTargetState | null;
-  updateSmartGuides?: (guides: GuideLine[]) => void;
+  updateSmartGuides?: (guides: GuideLine[], matches?: ResizeMatches | null) => void;
   clearSmartGuides?: () => void;
   smartGuidesRef?: React.RefObject<any>;
+  resizeMatches?: ResizeMatches | null;
 }
 
-const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onResizeComponent, canvasRef, dragTargetState, updateSmartGuides, clearSmartGuides, smartGuidesRef }: BuilderCanvasProps) => {
+const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onResizeComponent, canvasRef, dragTargetState, updateSmartGuides, clearSmartGuides, smartGuidesRef, resizeMatches }: BuilderCanvasProps) => {
   const hasComponents = components.length > 0;
   const interactionZIndex = getHighestZIndex(components) + 1;
   
@@ -543,6 +589,7 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
                   checkChildSelected={checkChildSelected}
                   updateSmartGuides={updateSmartGuides}
                   clearSmartGuides={clearSmartGuides}
+                  resizeMatches={resizeMatches}
                 />
               );
             }
@@ -560,6 +607,7 @@ const BuilderCanvas = ({ components, selectedComponentId, onSelectComponent, onR
                 maxHeight={CANVAS_HEIGHT - (comp.layout?.y ?? 0)}
                 updateSmartGuides={updateSmartGuides}
                 clearSmartGuides={clearSmartGuides}
+                resizeMatches={resizeMatches}
               />
             );
           })

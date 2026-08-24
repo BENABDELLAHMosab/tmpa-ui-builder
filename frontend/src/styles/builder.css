@@ -798,6 +798,16 @@
   border-color: #0d2a4d;
   color: #0d2a4d;
 }
+/* Smart Guide size matching feedback */
+:root {
+  --smart-size-match-color: #8b5cf6;
+}
+
+.size-match {
+  outline: 2px solid var(--smart-size-match-color) !important;
+  outline-offset: 1px !important;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15) !important;
+}
 /* Save Custom Component Modal */
 .save-custom-modal-overlay {
   position: fixed;
