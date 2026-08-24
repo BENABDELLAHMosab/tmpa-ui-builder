@@ -85,5 +85,19 @@ export const authService = {
       ...dev,
       accountStatus: dev.accountStatus || 'active'
     };
+  },
+
+  deleteDeveloper: async (userId: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/auth/users/${userId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error(errorData.error || "Failed to delete developer");
+      (error as any).code = errorData.code;
+      throw error;
+    }
   }
 };

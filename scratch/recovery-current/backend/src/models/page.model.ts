@@ -1,0 +1,48 @@
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface IPage extends Omit<Document, 'schema'> {
+  name: string;
+  description: string;
+  ownerId: mongoose.Types.ObjectId;
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'published';
+  schema: Record<string, any>;
+  version: number;
+  reviewedBy?: mongoose.Types.ObjectId;
+  reviewedAt?: Date;
+  rejectionReason?: string;
+  rejectionFeedbackDismissed?: boolean;
+  publishedBy?: mongoose.Types.ObjectId;
+  publishedAt?: Date;
+  publishedVersionNumber?: number;
+  contentHash?: string;
+  activeReviewId?: mongoose.Types.ObjectId;
+  reviewRoundCounter: number;
+}
+
+const pageSchema: Schema = new Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    description: { type: String, default: "" },
+    ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    status: {
+      type: String,
+      enum: ['draft', 'submitted', 'approved', 'rejected', 'published'],
+      default: 'draft'
+    },
+    reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    reviewedAt: { type: Date },
+    rejectionReason: { type: String, default: "" },
+    rejectionFeedbackDismissed: { type: Boolean, default: false },
+    publishedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    publishedAt: { type: Date },
+    publishedVersionNumber: { type: Number },
+    schema: { type: Schema.Types.Mixed, default: { components: [] } },
+    version: { type: Number, default: 0 },
+    contentHash: { type: String },
+    activeReviewId: { type: Schema.Types.ObjectId, ref: 'PageReview' },
+    reviewRoundCounter: { type: Number, default: 0 }
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model<IPage>('Page', pageSchema);

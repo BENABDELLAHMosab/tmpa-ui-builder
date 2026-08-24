@@ -4,6 +4,7 @@ import type { DeveloperAccount, AccountStatus } from '../types/auth';
 import PortalLayout from '../components/layout/PortalLayout';
 import StatusBadge from '../components/ui/StatusBadge';
 import AddDeveloperModal from '../components/admin/AddDeveloperModal';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import '../styles/dashboard.css';
 
 const AdminDevelopersPage = () => {
@@ -13,6 +14,9 @@ const AdminDevelopersPage = () => {
   const [updatingDeveloperId, setUpdatingDeveloperId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [isAddDevModalOpen, setIsAddDevModalOpen] = useState<boolean>(false);
+  const [developerToDelete, setDeveloperToDelete] = useState<DeveloperAccount | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDevelopers();
@@ -67,6 +71,40 @@ const AdminDevelopersPage = () => {
     setSuccessMessage(msg);
     setTimeout(() => setSuccessMessage(''), 4000);
     fetchDevelopers();
+  };
+
+  const confirmDelete = (developer: DeveloperAccount) => {
+    setDeveloperToDelete(developer);
+    setDeleteError(null);
+  };
+
+  const cancelDelete = () => {
+    if (isDeleting) return;
+    setDeveloperToDelete(null);
+    setDeleteError(null);
+  };
+
+  const executeDelete = async () => {
+    if (!developerToDelete) return;
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+      await authService.deleteDeveloper(developerToDelete.id);
+      
+      setDevelopers((current) => current.filter((dev) => dev.id !== developerToDelete.id));
+      setSuccessMessage(`Developer account "${developerToDelete.fullName}" has been deleted.`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setDeveloperToDelete(null);
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Failed to delete developer.';
+      if (err.code === 'DEVELOPER_HAS_DEPENDENCIES') {
+        setDeleteError('Cannot delete this developer because they have existing pages or review history. Suspend the account instead.');
+      } else {
+        setDeleteError(message);
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -176,7 +214,7 @@ const AdminDevelopersPage = () => {
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(dev)}
-                              className={isActive ? 'btn btn-danger' : 'btn btn-success'}
+                              className={isActive ? 'btn btn-secondary' : 'btn btn-success'}
                               disabled={isUpdating}
                             >
                               {isUpdating
@@ -184,6 +222,14 @@ const AdminDevelopersPage = () => {
                                 : isActive
                                 ? 'Suspend'
                                 : 'Reactivate'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => confirmDelete(dev)}
+                              className="btn btn-danger"
+                              disabled={isUpdating}
+                            >
+                              Delete
                             </button>
                           </div>
                         </td>
@@ -201,6 +247,30 @@ const AdminDevelopersPage = () => {
         isOpen={isAddDevModalOpen}
         onClose={() => setIsAddDevModalOpen(false)}
         onSuccess={handleDeveloperCreated}
+      />
+
+      <ConfirmDialog
+        isOpen={!!developerToDelete}
+        title="Delete developer?"
+        message={
+          <div>
+            <p style={{ margin: '0 0 8px 0' }}>You are about to permanently delete:</p>
+            <p style={{ margin: '0 0 4px 0', fontWeight: 'bold' }}>{developerToDelete?.fullName}</p>
+            <p style={{ margin: '0 0 16px 0' }}>{developerToDelete?.email}</p>
+            <p style={{ margin: 0, fontWeight: 'bold' }}>This action cannot be undone.</p>
+            {deleteError && (
+              <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--color-danger)', color: 'white', borderRadius: '4px' }}>
+                {deleteError}
+              </div>
+            )}
+          </div>
+        }
+        confirmLabel="Delete Developer"
+        cancelLabel="Cancel"
+        isDestructive={true}
+        isProcessing={isDeleting}
+        onConfirm={executeDelete}
+        onCancel={cancelDelete}
       />
     </PortalLayout>
   );

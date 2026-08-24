@@ -1,0 +1,250 @@
+import type { UiPage, CreatePageRequest, PageSchema, PageVersionListResponse, PageVersionDetail } from '../types/page';
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+const getHeaders = () => {
+  const token = localStorage.getItem("accessToken");
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`
+  };
+};
+
+export const pageService = {
+  getPageById: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch page");
+    }
+
+    return response.json();
+  },
+
+  updatePage: async (pageId: string, payload: Partial<CreatePageRequest> & { schema?: PageSchema }): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}`, {
+      method: "PATCH",
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to update page");
+    }
+
+    return response.json();
+  },
+
+  submitPage: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/submit`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to submit page");
+    }
+
+    return response.json();
+  },
+
+  updateReviewToLatest: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reviews/update-to-latest`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to update review to latest version");
+    }
+
+    return response.json();
+  },
+
+  approvePage: async (pageId: string, reviewId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reviews/${reviewId}/approve`, {
+      method: "PATCH",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to approve page");
+    }
+
+    return response.json();
+  },
+
+  rejectPage: async (pageId: string, reviewId: string, rejectionReason: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reviews/${reviewId}/request-changes`, {
+      method: "PATCH",
+      headers: getHeaders(),
+      body: JSON.stringify({ rejectionReason }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to reject page");
+    }
+
+    return response.json();
+  },
+
+  publishPage: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/publish`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to publish page");
+    }
+
+    return response.json();
+  },
+
+  getPages: async (): Promise<UiPage[]> => {
+    const response = await fetch(`${API_URL}/pages`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch pages");
+    }
+
+    return response.json();
+  },
+
+  createPage: async (payload: CreatePageRequest): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to create page");
+    }
+
+    return response.json();
+  },
+
+  deletePage: async (pageId: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to delete page");
+    }
+  },
+
+  getPageVersions: async (pageId: string, page = 1, limit = 20): Promise<PageVersionListResponse> => {
+    const url = new URL(`${API_URL}/pages/${pageId}/versions`);
+    url.searchParams.append("page", page.toString());
+    url.searchParams.append("limit", limit.toString());
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch page versions");
+    }
+
+    return response.json();
+  },
+
+  getPageVersion: async (pageId: string, versionNumber: number): Promise<PageVersionDetail> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/versions/${versionNumber}`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to load this page version");
+    }
+
+    return response.json();
+  },
+
+  restorePageVersion: async (
+    pageId: string,
+    versionNumber: number,
+    expectedVersion: number
+  ): Promise<UiPage> => {
+    const response = await fetch(
+      `${API_URL}/pages/${pageId}/versions/${versionNumber}/restore`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ expectedVersion }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to restore page version");
+    }
+
+    return response.json();
+  },
+
+  deletePageVersion: async (pageId: string, versionNumber: number): Promise<void> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/versions/${versionNumber}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to delete page version");
+    }
+  },
+
+  dismissRejectionFeedback: async (pageId: string): Promise<UiPage> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/rejection-feedback/dismiss`, {
+      method: "PATCH",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to dismiss rejection feedback");
+    }
+
+    return response.json();
+  },
+
+  getPageReviews: async (pageId: string): Promise<any[]> => {
+    const response = await fetch(`${API_URL}/pages/${pageId}/reviews`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to fetch page reviews");
+    }
+
+    return response.json();
+  }
+};
+
+

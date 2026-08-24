@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { login, createDeveloper, getDevelopers, updateDeveloperStatus } from '../services/auth.service';
+import { login, createDeveloper, getDevelopers, updateDeveloperStatus, deleteDeveloper } from '../services/auth.service';
 
 export const loginController = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -79,3 +79,22 @@ export const updateDeveloperStatusController = async (req: Request, res: Respons
     res.status(500).json({ error: error.message || 'Failed to update developer status' });
   }
 };
+
+export const deleteDeveloperController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    await deleteDeveloper(userId);
+    res.status(200).json({ message: 'Developer deleted successfully' });
+  } catch (error: any) {
+    if (error.code === 'DEVELOPER_HAS_DEPENDENCIES') {
+      res.status(409).json({ code: error.code, error: error.message });
+      return;
+    }
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ error: error.message });
+      return;
+    }
+    res.status(500).json({ error: error.message || 'Failed to delete developer' });
+  }
+};
+

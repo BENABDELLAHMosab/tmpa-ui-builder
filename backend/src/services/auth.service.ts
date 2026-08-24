@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 import User, { AccountStatus } from '../models/user.model';
+import Page from '../models/page.model';
+import PageVersion from '../models/pageVersion.model';
+import PageReview from '../models/pageReview.model';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -147,4 +150,38 @@ export const updateDeveloperStatus = async (userId: string, accountStatus: Accou
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
   };
+};
+
+export const deleteDeveloper = async (userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const error: any = new Error('Invalid user ID');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await User.findOne({ _id: userId, role: 'user-developer' });
+  if (!user) {
+    const error: any = new Error('Developer not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const hasPages = await Page.findOne({
+    $or: [{ ownerId: userId }, { reviewedBy: userId }, { publishedBy: userId }]
+  }).select('_id').lean();
+
+  const hasVersions = await PageVersion.findOne({ createdBy: userId }).select('_id').lean();
+
+  const hasReviews = await PageReview.findOne({
+    $or: [{ submittedBy: userId }, { reviewedBy: userId }, { publishedBy: userId }]
+  }).select('_id').lean();
+
+  if (hasPages || hasVersions || hasReviews) {
+    const error: any = new Error('This developer cannot be deleted because they have existing pages or review history. Suspend the account instead.');
+    error.code = 'DEVELOPER_HAS_DEPENDENCIES';
+    error.statusCode = 409;
+    throw error;
+  }
+
+  await User.deleteOne({ _id: userId });
 };
