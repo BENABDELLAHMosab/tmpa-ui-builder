@@ -25,7 +25,8 @@ export const login = async (email: string, password: string) => {
     throw error;
   }
 
-  const secret = process.env.JWT_SECRET || 'fallback_secret';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET manquant');
   const token = jwt.sign(
     { userId: user._id, email: user.email, role: user.role },
     secret,
