@@ -9,7 +9,11 @@ import assetRoutes from './routes/asset.routes';
 
 const app = express();
 
-app.use(cors());
+const origins = (process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+if (process.env.NODE_ENV === 'production' && origins.length === 0) {
+  throw new Error('CORS_ORIGIN obligatoire en production');
+}
+app.use(cors({ origin: process.env.NODE_ENV === 'production' ? origins : true }));
 app.use(express.json());
 
 app.use('/api/health', healthRoutes);
