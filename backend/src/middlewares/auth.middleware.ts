@@ -17,7 +17,11 @@ export const authenticateJWT = async (req: Request, res: Response, next: NextFun
   }
 
   const token = authHeader.split(' ')[1];
-  const secret = process.env.JWT_SECRET || 'fallback_secret';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    res.status(500).json({ error: 'Configuration du serveur invalide' });
+    return;
+  }
 
   try {
     const decoded = jwt.verify(token, secret) as JwtPayload;
