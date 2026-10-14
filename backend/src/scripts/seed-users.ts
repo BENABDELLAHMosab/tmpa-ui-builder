@@ -19,32 +19,37 @@ const seedUsers = async () => {
     await User.findOneAndUpdate(
       { email: adminEmail },
       {
-        fullName: 'TMPA Admin',
-        email: adminEmail,
-        passwordHash: adminPasswordHash,
-        role: 'admin'
+        $setOnInsert: {
+          fullName: 'TMPA Admin',
+          email: adminEmail,
+          passwordHash: adminPasswordHash,
+          role: 'admin'
+        }
       },
       { upsert: true, new: true }
     );
-    console.log('Admin user seeded/updated.');
+    console.log('Admin user ready (created if missing).');
 
     // Developer
     const devPasswordHash = await bcrypt.hash('dev123', 10);
     await User.findOneAndUpdate(
       { email: devEmail },
       {
-        fullName: 'TMPA Developer',
-        email: devEmail,
-        passwordHash: devPasswordHash,
-        role: 'user-developer'
+        $setOnInsert: {
+          fullName: 'TMPA Developer',
+          email: devEmail,
+          passwordHash: devPasswordHash,
+          role: 'user-developer'
+        }
       },
       { upsert: true, new: true }
     );
-    console.log('Developer user seeded/updated.');
+    console.log('Developer user ready (created if missing).');
 
     console.log('Seeding completed successfully.');
   } catch (error) {
     console.error('Error during seeding:', error);
+    process.exitCode = 1;
   } finally {
     await mongoose.connection.close();
     console.log('MongoDB connection closed.');

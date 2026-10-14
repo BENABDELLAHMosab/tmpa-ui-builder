@@ -49,9 +49,18 @@ Assurez-vous d'avoir Docker et Docker Compose installés sur votre machine.
   docker compose down
   ```
 
+Les comptes de base sont crees automatiquement au demarrage du backend, apres
+initialisation du replica set MongoDB. Les comptes existants et leurs mots de
+passe sont conserves. Si le seeding echoue, le backend ne demarre pas.
+
+| Compte | Email | Mot de passe initial |
+| --- | --- | --- |
+| Admin | `admin@tmpa.ma` | `admin123` |
+| Developpeur | `developer@tmpa.ma` | `dev123` |
+
 ### URLs utiles
 - **Frontend** : [http://localhost:5173](http://localhost:5173)
-- **Backend (Health Check)** : [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- **Backend (Health Check)** : [http://localhost:5000/api/health/test](http://localhost:5000/api/health/test)
 - **MongoDB** : `mongodb://localhost:27017`
 - **Mongo Express** : [http://localhost:8081](http://localhost:8081)
   - Identifiant : `admin`
@@ -93,4 +102,4 @@ Pour lancer le projet localement sans utiliser Docker pour les serveurs Node/Vit
    ```
 
 - Le frontend sera accessible sur [http://localhost:5173](http://localhost:5173).
-- Le backend sera accessible sur [http://localhost:5000/api/health](http://localhost:5000/api/health).
+- Le backend sera accessible sur [http://localhost:5000/api/health/test](http://localhost:5000/api/health/test).

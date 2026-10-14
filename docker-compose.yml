@@ -10,21 +10,36 @@ services:
     volumes:
       - mongo_data:/data/db
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand({ping:1}).ok ? 0 : 1)"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
 
   mongo-init:
     image: mongo:latest
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     restart: "no"
     command: >
       mongosh --host mongo --eval '
-      try { 
-        var st = rs.status(); 
-        print("Replica set status OK"); 
-      } catch(e) { 
-        print("Initializing replica set..."); 
-        rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]}); 
-      }'
+      try {
+        rs.status();
+      } catch(e) {
+        if (e.code !== 94) throw e;
+        print("Initializing replica set...");
+        rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]});
+      }
+      for (var attempt = 0; attempt < 60; attempt++) {
+        if (db.hello().isWritablePrimary) {
+          print("Replica set ready");
+          quit(0);
+        }
+        sleep(1000);
+      }
+      print("Replica set did not become ready in time");
+      quit(1);'
 
   mongo-express:
     image: mongo-express:1.0.2
@@ -44,6 +59,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: tmpa_backend
+    command: ["sh", "-c", "npm run seed:users && exec npm run dev"]
     ports:
       - "5000:5000"
     volumes:
@@ -54,7 +70,8 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017/tmpa_ui_builder?replicaSet=rs0
     depends_on:
-      - mongo
+      mongo-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   frontend:
