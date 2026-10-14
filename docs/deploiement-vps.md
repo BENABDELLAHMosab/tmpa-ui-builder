@@ -79,11 +79,12 @@ read -r -s -p "Mot de passe admin : " SEED_ADMIN_PASSWORD; echo
 export SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD
 docker compose --env-file .env.vps -f compose.vps.yml run --rm --no-deps \
   -e SEED_ADMIN_EMAIL -e SEED_ADMIN_PASSWORD backend \
-  sh -c 'echo "Ce conteneur ne comprend que les artefacts compilés : voir commande node ci-dessous"'
+  node /app/dist/scripts/seed-admin.js
 unset SEED_ADMIN_EMAIL SEED_ADMIN_PASSWORD
 ```
 
-Pour initialiser effectivement le compte, utilisez le script compilé `dist/scripts/seed-admin.js` via une tâche d'administration adaptée, avec les variables temporaires et la même connexion MongoDB que le backend. Ne pas injecter les mots de passe dans les arguments visibles de la commande.
+Le script refuse de modifier un compte existant. Les secrets de l'administrateur sont injectés uniquement dans cette commande ponctuelle et ne sont pas conservés dans Compose.
+
 
 ## 6. Tests et exploitation
 
