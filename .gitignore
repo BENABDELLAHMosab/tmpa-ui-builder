@@ -14,3 +14,8 @@ Thumbs.db
 # Dossiers temporaires
 .tmp
 .temp
+
+# Configuration du VPS, secrets et config nginx générée
+.env.vps
+deploy/secrets/
+deploy/nginx/active.conf
