@@ -12,4 +12,7 @@ MONGO_URI="mongodb://tmpa_app:${MONGO_PASSWORD}@mongo:27017/tmpa_ui_builder?auth
 
 export JWT_SECRET MONGO_URI
 unset MONGO_PASSWORD
+if [ "$#" -gt 0 ]; then
+  exec su-exec node "$@"
+fi
 exec su-exec node node /app/dist/server.js
